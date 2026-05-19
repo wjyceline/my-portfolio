@@ -1,0 +1,2376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="仓位">
+<meta name="theme-color" content="#0a0a0f">
+<title>仓位</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#18181f;--bg4:#1e1e28;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f0eff5;--muted:rgba(240,239,245,0.45);--muted2:rgba(240,239,245,0.20);
+  --accent:#c8b8ff;--accent2:#7c6aff;
+  --green:#4ade90;--red:#ff6b7a;--gold:#f5c842;
+  --st:env(safe-area-inset-top,44px);--sb:env(safe-area-inset-bottom,20px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans SC',sans-serif;min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:999}
+
+/* ── Layout ── */
+#app{display:flex;flex-direction:column;min-height:100dvh}
+.hdr{padding:calc(var(--st) + 10px) 20px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;background:linear-gradient(to bottom,var(--bg) 70%,transparent);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.logo{font-family:'DM Serif Display',serif;font-size:22px;background:linear-gradient(135deg,var(--text),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr-acts{display:flex;gap:8px;align-items:center}
+.btn-ic{width:36px;height:36px;border-radius:10px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;-webkit-tap-highlight-color:transparent;font-family:'DM Mono',monospace}
+.btn-ic:active{transform:scale(.92)}
+.price-status{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;display:flex;align-items:center;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--muted2)}
+.dot.live{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot.updating{background:var(--gold);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.tabs{display:flex;padding:0 20px;gap:4px;margin-bottom:8px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:7px 16px;border-radius:20px;font-size:13px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.tab.active{background:var(--bg3);border-color:var(--border2);color:var(--text)}
+
+.content{flex:1;overflow-y:auto;padding:0 0 calc(var(--sb) + 82px);scrollbar-width:none}
+.content::-webkit-scrollbar{display:none}
+
+/* ── Hero ── */
+.hero{margin:8px 20px 0;padding:26px 22px 22px;border-radius:24px;background:linear-gradient(135deg,#1a1428,#0f1a2e 55%,#111820);border:1px solid rgba(200,184,255,.14);position:relative;overflow:hidden;animation:fadeUp .5s ease both}
+.hero::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:radial-gradient(circle,rgba(124,106,255,.18),transparent 70%);pointer-events:none}
+.hero-lbl{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;font-family:'DM Mono',monospace}
+.hero-amt{font-family:'DM Serif Display',serif;font-size:40px;letter-spacing:-1px;line-height:1;margin-bottom:6px;background:linear-gradient(135deg,#fff,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:18px}
+.hero-row{display:flex;padding-top:16px;border-top:1px solid var(--border)}
+.pi{flex:1}.pi+.pi{border-left:1px solid var(--border);padding-left:14px}
+.pl{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;font-family:'DM Mono',monospace}
+.pv{font-family:'DM Mono',monospace;font-size:14px;font-weight:500}
+.pos{color:var(--green)}.neg{color:var(--red)}
+
+/* ── Currency toggle ── */
+.ccy-row{display:flex;gap:6px;margin:12px 20px 0}
+.ccy-btn{padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.ccy-btn.active{background:var(--accent2);border-color:var(--accent2);color:#fff}
+
+/* ── Section ── */
+.sec{padding:18px 20px 10px;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;display:flex;align-items:center;justify-content:space-between}
+.sec-lnk{font-size:11px;color:var(--accent);cursor:pointer;text-transform:none;letter-spacing:0}
+
+/* ── Broker grid ── */
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 20px}
+.bcard{padding:16px;border-radius:18px;background:var(--bg2);border:1px solid var(--border);position:relative;overflow:hidden}
+.bcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:18px 18px 0 0}
+.bcard[data-b="tiger"]::before{background:#ff7b3d}
+.bcard[data-b="pingan"]::before{background:#e84c5a}
+.bcard[data-b="okx"]::before{background:#c8b8ff}
+.bcard[data-b="coincola"]::before{background:#f5c842}
+.bcard[data-b="xueqiu"]::before{background:#3dd9c8}
+.bcard[data-b="qieman"]::before{background:#5ba4e0}
+.bcard-icon{font-size:18px;margin-bottom:6px}
+.bcard-name{font-size:11px;color:var(--muted);margin-bottom:4px}
+.bcard-amt{font-family:'DM Mono',monospace;font-size:15px;font-weight:500}
+.bcard-pnl{font-size:11px;margin-top:3px;font-family:'DM Mono',monospace}
+.bcard-n{font-size:10px;color:var(--muted2);margin-top:2px;font-family:'DM Mono',monospace}
+
+/* ── Filter bar ── */
+.fbar{display:flex;gap:6px;padding:0 20px 10px;overflow-x:auto;scrollbar-width:none}
+.fbar::-webkit-scrollbar{display:none}
+.fchip{flex-shrink:0;padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.fchip.active{background:var(--bg3);border-color:var(--border2);color:var(--text)}
+
+/* ── Holdings list ── */
+.hlist{padding:0 20px;display:flex;flex-direction:column;gap:8px}
+.hrow{padding:13px 15px;border-radius:16px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.hrow:active{transform:scale(.98)}
+.hticker{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'DM Mono',monospace;font-weight:500;flex-shrink:0;text-align:center;line-height:1.2;padding:2px}
+.hinfo{flex:1;min-width:0}
+.hname{font-size:13px;font-weight:500;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hmeta{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-family:'DM Mono',monospace}
+.hright{text-align:right;flex-shrink:0}
+.hval{font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
+.hpnl{font-size:10px;font-family:'DM Mono',monospace;margin-top:2px}
+/* Weight bar on holding row */
+.hwbar{height:2px;background:rgba(255,255,255,.06);border-radius:1px;margin-top:5px}
+.hwfill{height:100%;border-radius:1px;transition:width .5s}
+
+/* ── Analysis ── */
+.awrap{padding:0 20px}
+.ptoggle{display:flex;background:var(--bg3);border-radius:12px;padding:3px;margin-bottom:14px;border:1px solid var(--border)}
+.pbtn{flex:1;padding:8px 2px;border-radius:9px;border:none;background:transparent;color:var(--muted);font-size:11px;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;font-family:'Noto Sans SC',sans-serif}
+.pbtn.active{background:var(--bg4);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.4)}
+
+.scard{background:var(--bg2);border-radius:18px;border:1px solid var(--border);padding:18px;margin-bottom:10px}
+.scard-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.scard-title{font-size:14px;font-weight:500}
+.scard-sub{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px}
+.scard-r{text-align:right}
+.scard-val{font-family:'DM Mono',monospace;font-size:15px;font-weight:500}
+.scard-pct{font-size:10px;font-family:'DM Mono',monospace;margin-top:2px}
+.sbar-t{height:4px;background:rgba(255,255,255,.05);border-radius:3px;margin-bottom:14px}
+.sbar-f{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+/* Seg holding rows */
+.srow{display:flex;align-items:flex-start;justify-content:space-between;padding:8px 10px;background:rgba(255,255,255,.025);border-radius:8px;margin-bottom:5px}
+.srow-l{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.srow-ticker{font-family:'DM Mono',monospace;font-size:9px;width:40px;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+.srow-info{min-width:0;flex:1}
+.srow-name{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow-tags{display:flex;gap:4px;margin-top:2px;flex-wrap:wrap}
+/* inline weight bar inside seg rows */
+.srow-wbar{height:2px;background:rgba(255,255,255,.05);border-radius:1px;margin-top:4px}
+.srow-wfill{height:100%;border-radius:1px}
+.srow-r{text-align:right;flex-shrink:0;margin-left:8px}
+.srow-val{font-family:'DM Mono',monospace;font-size:12px}
+.srow-pnl{font-size:10px;font-family:'DM Mono',monospace}
+.srow-wpct{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px}
+
+/* Donut */
+.dcard{background:var(--bg2);border-radius:18px;border:1px solid var(--border);padding:18px;margin-bottom:10px}
+.dwrap{position:relative;width:130px;height:130px;margin:0 auto 14px}
+svg.dn{width:130px;height:130px;transform:rotate(-90deg)}
+.dctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.dctr-v{font-family:'DM Serif Display',serif;font-size:22px}
+.dctr-l{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.li{display:flex;align-items:center;gap:7px;font-size:11px}
+.ldot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.lpct{margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)}
+
+/* Matrix */
+.mwrap{background:var(--bg2);border-radius:18px;border:1px solid var(--border);padding:16px;margin-bottom:10px}
+.mlbl{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:14px}
+.mscroll{overflow-x:auto}
+table.mx{border-collapse:collapse;font-size:11px;font-family:'DM Mono',monospace;min-width:100%}
+table.mx th{color:var(--muted);font-weight:400;padding:5px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border);font-size:10px}
+table.mx th:first-child{text-align:left}
+table.mx td{padding:6px 8px;text-align:right;border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap;vertical-align:top}
+table.mx td:first-child{text-align:left;color:var(--muted);font-size:10px}
+table.mx tr:last-child td{border-bottom:none}
+.mc{border-radius:6px;padding:5px 8px;display:inline-block;min-width:80px;text-align:right}
+
+/* Modal */
+.movl{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:500;display:flex;align-items:flex-end;animation:fadeIn .2s ease}
+.modal{width:100%;max-height:92dvh;background:var(--bg2);border-radius:28px 28px 0 0;border:1px solid var(--border2);border-bottom:none;padding:0 0 calc(var(--sb) + 20px);animation:slideUp .3s cubic-bezier(.32,.72,0,1);overflow-y:auto;scrollbar-width:none}
+.modal::-webkit-scrollbar{display:none}
+.mhdl{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 18px}
+.mhdr{padding:0 22px 14px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--border)}
+.mtitle{font-family:'DM Serif Display',serif;font-size:21px}
+.msub{font-size:11px;color:var(--muted);margin-top:3px;font-family:'DM Mono',monospace}
+.mclose{width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:var(--bg3);color:var(--muted);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.mbody{padding:18px 22px}
+.fg{margin-bottom:14px}
+.fl{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;display:block;font-family:'DM Mono',monospace}
+.fi,.fsel{width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;transition:border-color .2s;-webkit-appearance:none}
+.fi:focus,.fsel:focus{border-color:var(--accent2)}
+.fsel{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(240,239,245,0.35)' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-p{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent2),#9b8eff);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'Noto Sans SC',sans-serif;-webkit-tap-highlight-color:transparent;transition:all .2s}
+.btn-p:active{transform:scale(.97);opacity:.9}
+.btn-s{width:100%;padding:13px;border-radius:13px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:14px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;margin-bottom:8px;-webkit-tap-highlight-color:transparent;transition:all .2s}
+.btn-d{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,107,122,.3);background:rgba(255,107,122,.08);color:var(--red);font-size:13px;cursor:pointer;margin-top:6px;font-family:'Noto Sans SC',sans-serif;-webkit-tap-highlight-color:transparent}
+.dsgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px}
+.dst{padding:13px;background:var(--bg3);border-radius:13px;border:1px solid var(--border)}
+.dstl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;font-family:'DM Mono',monospace}
+.dstv{font-family:'DM Mono',monospace;font-size:14px;font-weight:500}
+.dtags{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.dtag{padding:4px 12px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;border:1px solid var(--border2);background:var(--bg3)}
+.dz{border:2px dashed var(--border2);border-radius:16px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px}
+.dz.drag-over{border-color:var(--accent2);background:rgba(124,106,255,.05)}
+.csv-pre{background:var(--bg3);border-radius:10px;padding:10px;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);max-height:110px;overflow-y:auto;margin-bottom:12px}
+
+/* Settings */
+.stsec{padding:0 20px}
+.stcard{border-radius:16px;background:var(--bg2);border:1px solid var(--border);padding:4px 0;margin-bottom:12px}
+.strow{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.strow:last-child{border-bottom:none}
+
+/* Bottom nav */
+.bnav{position:fixed;bottom:0;left:0;right:0;padding:8px 20px calc(var(--sb) + 8px);background:rgba(10,10,15,.94);border-top:1px solid var(--border);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;justify-content:space-around;z-index:200}
+.ni{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:5px 14px;border-radius:12px;transition:all .2s;-webkit-tap-highlight-color:transparent;border:none;background:transparent;color:var(--muted)}
+.ni.active{color:var(--accent)}
+.ni:active{transform:scale(.92)}
+.ni-ic{font-size:20px;line-height:1}
+.ni-lb{font-size:9px;letter-spacing:.5px}
+
+/* Toast */
+.toast{position:fixed;top:calc(var(--st) + 56px);left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:9px 16px;font-size:12px;z-index:1001;animation:toIn .3s ease,toOut .3s 2.2s ease forwards;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,.5)}
+@keyframes toIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes toOut{to{opacity:0;transform:translateX(-50%) translateY(-8px)}}
+
+/* Misc */
+.empty{text-align:center;padding:50px 40px;color:var(--muted)}
+.dvdr{height:1px;background:var(--border);margin:14px 0}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle}
+
+/* Cash badge */
+.cash-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;background:rgba(61,217,200,.1);color:#3dd9c8;font-size:10px;font-family:'DM Mono',monospace}
+
+/* Price update indicator */
+.pupd{font-size:9px;color:var(--muted2);font-family:'DM Mono',monospace}
+.pupd.fresh{color:var(--green)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════
+const BROKERS=[
+  {id:'tiger',   name:'老虎证券',type:'港美股',   color:'#ff7b3d',icon:'🐯'},
+  {id:'pingan',  name:'平安证券',type:'A股',      color:'#e84c5a',icon:'🔴'},
+  {id:'okx',     name:'OKX',    type:'虚拟货币', color:'#c8b8ff',icon:'◎'},
+  {id:'coincola',name:'Coincola',type:'虚拟货币',color:'#f5c842',icon:'●'},
+  {id:'xueqiu',  name:'雪球',   type:'基金',     color:'#3dd9c8',icon:'❄'},
+  {id:'qieman',  name:'且慢',   type:'基金',     color:'#5ba4e0',icon:'📈'},
+];
+const CCYS=['CNY','HKD','USD','USDT'];
+// Colors for asset class and strategy
+const AC_COL={'美港股':'#7c6aff','债券':'#3dd9c8','加密':'#f5c842','基金':'#5ba4e0','A股':'#e84c5a','现金':'#4ade90','黄金':'#f0a500'};
+const ST_COL={'配置':'#4ade90','波段':'#c8b8ff','投机':'#ff6b7a','现金':'#3dd9c8','防守':'#f0a500','其他':'#888'};
+const ASSETS=['美港股','A股','债券','基金','加密','黄金','现金'];
+const STRATS=['配置','波段','防守','投机','现金','其他'];
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// SEED DATA — Tiger 5.14
+// ═══════════════════════════════════════════════════════════════
+const SEED_TIGER=[
+  {ticker:'07747',name:'南方两倍做多三星电子',qty:100, avgCost:57.8991,  currentPrice:155.6,  currency:'HKD',assetClass:'美港股',strategy:'波段'},
+  {ticker:'07709',name:'南方两倍做多海力士',  qty:100, avgCost:27.97165,currentPrice:105,    currency:'HKD',assetClass:'美港股',strategy:'波段'},
+  {ticker:'03690',name:'美团-W',              qty:10,  avgCost:0,        currentPrice:85.7,   currency:'HKD',assetClass:'美港股',strategy:'波段'},
+  {ticker:'01810',name:'小米集团-W',          qty:1200,avgCost:39.9456, currentPrice:31.72,  currency:'HKD',assetClass:'美港股',strategy:'配置'},
+  {ticker:'09988',name:'阿里巴巴-W',          qty:1,   avgCost:111.4968,currentPrice:137.9,  currency:'HKD',assetClass:'美港股',strategy:'配置'},
+  {ticker:'SGOV', name:'iShares 0-3M国债ETF', qty:328, avgCost:100.5509,currentPrice:100.52, currency:'USD',assetClass:'债券',  strategy:'现金'},
+  {ticker:'LITE', name:'Lumentum Holdings',   qty:6,   avgCost:846.1917,currentPrice:1001.81,currency:'USD',assetClass:'美港股',strategy:'波段'},
+  {ticker:'SMH',  name:'半导体指数ETF',        qty:6,   avgCost:387.6537,currentPrice:578.34, currency:'USD',assetClass:'美港股',strategy:'波段'},
+  {ticker:'AMD',  name:'超微公司',             qty:6,   avgCost:326.2417,currentPrice:449.7,  currency:'USD',assetClass:'美港股',strategy:'波段'},
+  {ticker:'TSM',  name:'台积电',               qty:6,   avgCost:396.4617,currentPrice:417.72, currency:'USD',assetClass:'美港股',strategy:'波段'},
+  {ticker:'EMQQ', name:'新兴市场互联网ETF',    qty:70,  avgCost:43.7323, currentPrice:33.37,  currency:'USD',assetClass:'美港股',strategy:'波段'},
+  {ticker:'SNDK', name:'闪迪',                 qty:1,   avgCost:552.1367,currentPrice:1382.72,currency:'USD',assetClass:'美港股',strategy:'波段'},
+  {ticker:'INTC', name:'英特尔',               qty:10,  avgCost:116.773, currentPrice:115.93, currency:'USD',assetClass:'美港股',strategy:'波段'},
+  {ticker:'KORU', name:'韩国3倍做多ETF',       qty:1,   avgCost:741.0367,currentPrice:919.88, currency:'USD',assetClass:'美港股',strategy:'波段'},
+  {ticker:'MU',   name:'美光科技',             qty:1,   avgCost:510.4082,currentPrice:776.01, currency:'USD',assetClass:'美港股',strategy:'波段'},
+  {ticker:'GOOG', name:'谷歌',                 qty:40,  avgCost:302.2311,currentPrice:397.17, currency:'USD',assetClass:'美港股',strategy:'配置'},
+  {ticker:'PDD',  name:'拼多多',               qty:150, avgCost:111.3467,currentPrice:95.58,  currency:'USD',assetClass:'美港股',strategy:'配置'},
+  {ticker:'META', name:'Meta Platforms',       qty:10,  avgCost:613.782, currentPrice:618.43, currency:'USD',assetClass:'美港股',strategy:'配置'},
+  {ticker:'AAPL', name:'苹果',                 qty:20,  avgCost:265.7225,currentPrice:298.21, currency:'USD',assetClass:'美港股',strategy:'配置'},
+  {ticker:'TQQQ', name:'纳指三倍做多ETF',      qty:2,   avgCost:44.7015, currentPrice:78.95,  currency:'USD',assetClass:'美港股',strategy:'配置'},
+  {ticker:'RLX',  name:'雾芯科技',             qty:650, avgCost:2.2119,  currentPrice:2.11,   currency:'USD',assetClass:'美港股',strategy:'投机'},
+  {ticker:'IREN', name:'IREN Ltd',              qty:10,  avgCost:67.7438, currentPrice:58.4,   currency:'USD',assetClass:'美港股',strategy:'投机'},
+].map(h=>({...h,brokerId:'tiger'}));
+
+// 平安证券持仓 — 截至CSV导出日期
+// 注：沪港通标的（腾讯/泡泡玛特/美图/中芯/美团/名创优品）以人民币结算，保留RMB
+// 注：负成本价记录为平安证券分红返还后的累计成本，直接保留原始数据
+const SEED_PINGAN=[
+  {ticker:'021842',name:'国富全球科技互联混合(QDII)C', qty:39693.26,avgCost:5.039,   currentPrice:7.3867,  currency:'CNY',assetClass:'美港股',strategy:'配置'},
+  {ticker:'00700', name:'腾讯控股',                     qty:700,     avgCost:516.881, currentPrice:395.096, currency:'CNY',assetClass:'A股',   strategy:'配置'},
+  {ticker:'518850',name:'黄金ETF华夏',                  qty:21600,   avgCost:9.791,   currentPrice:9.642,   currency:'CNY',assetClass:'黄金',   strategy:'防守'},
+  {ticker:'159928',name:'消费ETF汇添富',                qty:290000,  avgCost:0.867,   currentPrice:0.708,   currency:'CNY',assetClass:'A股',   strategy:'波段'},
+  {ticker:'09992', name:'泡泡玛特',                     qty:1400,    avgCost:182.533, currentPrice:131.930, currency:'CNY',assetClass:'A股',   strategy:'波段'},
+  {ticker:'513050',name:'中概互联网ETF易方达',          qty:120000,  avgCost:1.396,   currentPrice:1.190,   currency:'CNY',assetClass:'A股',   strategy:'配置'},
+  {ticker:'159740',name:'恒生科技ETF大成',              qty:101400,  avgCost:0.556,   currentPrice:0.621,   currency:'CNY',assetClass:'A股',   strategy:'配置'},
+  {ticker:'017590',name:'中泰天择稳健6个月持有FOF',     qty:46663.56,avgCost:1.071,   currentPrice:1.2256,  currency:'CNY',assetClass:'债券',   strategy:'防守'},
+  {ticker:'01357', name:'美图公司',                     qty:12000,   avgCost:8.071,   currentPrice:4.086,   currency:'CNY',assetClass:'A股',   strategy:'波段'},
+  {ticker:'159967',name:'创业板成长ETF华夏',            qty:52000,   avgCost:0.8147,  currentPrice:0.87,    currency:'CNY',assetClass:'A股',   strategy:'波段'},
+  {ticker:'160644',name:'港美互联网LOF',                qty:18700,   avgCost:2.0503,  currentPrice:1.975,   currency:'CNY',assetClass:'美港股',strategy:'波段'},
+  {ticker:'00981', name:'中芯国际',                     qty:500,     avgCost:64.745,  currentPrice:61.593,  currency:'CNY',assetClass:'A股',   strategy:'投机'},
+  {ticker:'515880',name:'通信ETF国泰',                  qty:20000,   avgCost:1.5003,  currentPrice:1.517,   currency:'CNY',assetClass:'A股',   strategy:'波段'},
+  {ticker:'100050',name:'富国全球债券',                  qty:21884.67,avgCost:1.272,   currentPrice:1.2749,  currency:'CNY',assetClass:'债券',   strategy:'防守'},
+  {ticker:'019518',name:'富国全球债券(QDII)C',          qty:14629.15,avgCost:1.281,   currentPrice:1.266,   currency:'CNY',assetClass:'债券',   strategy:'防守'},
+  {ticker:'03690', name:'美团-W(平安)',                  qty:200,     avgCost:131.564, currentPrice:71.592,  currency:'CNY',assetClass:'A股',   strategy:'配置'},
+  {ticker:'008254',name:'华宝致远混合C',                qty:6293.57, avgCost:1.430,   currentPrice:1.9362,  currency:'CNY',assetClass:'美港股',strategy:'配置'},
+  {ticker:'016702',name:'银华海外数字经济量化(QDII)C',  qty:5611.98, avgCost:1.782,   currentPrice:2.0899,  currency:'CNY',assetClass:'美港股',strategy:'配置'},
+  {ticker:'601899',name:'紫金矿业',                     qty:300,     avgCost:31.097,  currentPrice:31.840,  currency:'CNY',assetClass:'A股',   strategy:'波段'},
+  {ticker:'159265',name:'港股消费ETF鹏华',              qty:10000,   avgCost:1.052,   currentPrice:0.869,   currency:'CNY',assetClass:'A股',   strategy:'波段'},
+  {ticker:'008253',name:'华宝致远混合A',                qty:4039.43, avgCost:1.485,   currentPrice:1.9867,  currency:'CNY',assetClass:'美港股',strategy:'配置'},
+  {ticker:'09896', name:'名创优品',                     qty:200,     avgCost:-21.944, currentPrice:24.239,  currency:'CNY',assetClass:'A股',   strategy:'波段'},
+  {ticker:'600938',name:'中国海油',                     qty:100,     avgCost:-66.466, currentPrice:36.510,  currency:'CNY',assetClass:'A股',   strategy:'防守'},
+  {ticker:'159268',name:'港股通消费ETF汇添富',          qty:2000,    avgCost:1.032,   currentPrice:0.839,   currency:'CNY',assetClass:'A股',   strategy:'波段'},
+  {ticker:'510300',name:'沪深300ETF华泰柏瑞',          qty:100,     avgCost:-233.555,currentPrice:4.878,   currency:'CNY',assetClass:'A股',   strategy:'防守'},
+  {ticker:'510760',name:'上证指数ETF国泰',              qty:100,     avgCost:-236.369,currentPrice:1.356,   currency:'CNY',assetClass:'A股',   strategy:'防守'},
+].map(h=>({...h,brokerId:'pingan'}));
+
+const SEED=[...SEED_TIGER,...SEED_PINGAN];
+
+// ═══════════════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════════════
+const DB={
+  lh(){try{return JSON.parse(localStorage.getItem('ptf5_h')||'null')}catch{return null}},
+  sh(d){localStorage.setItem('ptf5_h',JSON.stringify(d))},
+  lr(){try{return JSON.parse(localStorage.getItem('ptf5_r')||'null')}catch{return null}},
+  sr(r){localStorage.setItem('ptf5_r',JSON.stringify(r))},
+  lpu(){try{return JSON.parse(localStorage.getItem('ptf5_pu')||'null')}catch{return null}},
+  spu(t){localStorage.setItem('ptf5_pu',JSON.stringify(t))},
+  // Snapshots: array of {date,totalValue,totalCost,totalPnl,byBroker:{id:value,...}}
+  lsnap(){try{return JSON.parse(localStorage.getItem('ptf5_snap')||'[]')}catch{return[]}},
+  ssnap(s){localStorage.setItem('ptf5_snap',JSON.stringify(s))},
+};
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function seed(){return SEED.map(h=>({...h,id:uid(),sector:h.assetClass,priceUpdatedAt:null}))}
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let S={
+  holdings: DB.lh()||seed(),
+  tab:'dashboard', ccy:'HKD',
+  fb:'all', fa:'all', fs:'all',
+  pivot:'asset',
+  selAsset:null,
+  stratDrawer:null,
+  modal:null, selId:null, form:{},
+  csvRaw:'', csvParsed:[],
+  toast:null,
+  rates: DB.lr()||{USD:7.28,HKD:0.927,USDT:7.28,ratesDate:null},
+  fetchingRates:false,
+  fetchingPrices:false,
+  priceStatus:'idle',
+  lastPriceUpdate: DB.lpu(),
+  priceTimer:null,
+  // History
+  snapshots: DB.lsnap(),   // [{date,totalValue,totalCost,totalPnl,byBroker:{id:CNY}}]
+  histRange: '6M',         // '1M'|'3M'|'6M'|'1Y'|'ALL'
+  histMetric: 'value',     // 'value'|'pnl'|'pnlPct'
+  histBroker: 'all',       // 'all'|broker id
+  histImportModal: false,  // show import-history modal
+  histImportDate: new Date().toISOString().slice(0,10),
+  histImportFiles: [],     // [{name, parsed:[holdings]}]
+  riskDismissed: false,    // user dismissed risk panel
+};
+if(!DB.lh())DB.sh(S.holdings);
+
+// ═══════════════════════════════════════════════════════════════
+// MATH
+// ═══════════════════════════════════════════════════════════════
+function toCNY(v,c){const m={CNY:1,HKD:S.rates.HKD,USD:S.rates.USD,USDT:S.rates.USDT};return v*(m[c]||1)}
+function fromCNY(v){const m={CNY:1,HKD:S.rates.HKD,USD:S.rates.USD,USDT:S.rates.USDT};return v/(m[S.ccy]||1)}
+function fsym(c){return{CNY:'¥',HKD:'HK$',USD:'$',USDT:'₮'}[c||S.ccy]||'¥'}
+function fmt(n,c){
+  const s=fsym(c);const a=Math.abs(n);
+  if(a>=1e6)return(n<0?'-':'')+s+(a/1e6).toFixed(2)+'M';
+  if(a>=1e4)return(n<0?'-':'')+s+(a/1e4).toFixed(2)+'万';
+  return(n<0?'-':'')+s+a.toLocaleString('zh',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function pct(n){return(n>=0?'+':'')+n.toFixed(2)+'%'}
+function wPct(n){return n.toFixed(1)+'%'}
+function broker(id){return BROKERS.find(b=>b.id===id)||BROKERS[0]}
+
+function hm(h){
+  if(h.isCash){
+    const vCNY=toCNY(h.cashAmount||0,h.currency);
+    return{cost:h.cashAmount||0,value:h.cashAmount||0,pnl:0,pnlPct:0,valueCNY:vCNY,costCNY:vCNY,pnlCNY:0};
+  }
+  const cost=h.qty*h.avgCost,value=h.qty*h.currentPrice,pnl=value-cost;
+  const pnlPct=cost>0?(pnl/cost)*100:0;
+  return{cost,value,pnl,pnlPct,valueCNY:toCNY(value,h.currency),costCNY:toCNY(cost,h.currency),pnlCNY:toCNY(pnl,h.currency)};
+}
+function tots(hs){
+  hs=hs||S.holdings;let vC=0,cC=0,pC=0;
+  hs.forEach(h=>{const m=hm(h);vC+=m.valueCNY;cC+=m.costCNY;pC+=m.pnlCNY});
+  return{vC,cC,pC,pp:cC>0?(pC/cC)*100:0};
+}
+function grp(hs,key){
+  const map={};
+  hs.forEach(h=>{const k=h[key]||'其他';if(!map[k])map[k]={items:[],vC:0,cC:0,pC:0};const m=hm(h);map[k].items.push(h);map[k].vC+=m.valueCNY;map[k].cC+=m.costCNY;map[k].pC+=m.pnlCNY});
+  return map;
+}
+function uniq(key){return[...new Set(S.holdings.map(h=>h[key]).filter(Boolean))]}
+
+// ═══════════════════════════════════════════════════════════════
+// REAL-TIME PRICES — multi-source with fallback chain
+//
+// Source 1 (crypto):  CoinGecko public API — native CORS support
+// Source 2 (stocks):  Yahoo Finance v8/chart via corsproxy.io
+// Source 3 (stocks):  Yahoo Finance v8/chart via thingproxy (fallback)
+//
+// Each holding is fetched individually so one failure won't
+// block the rest. Results are merged at the end.
+// ═══════════════════════════════════════════════════════════════
+
+// Map holding → Yahoo Finance symbol
+function toYahooSym(h){
+  if(h.isCash||h.assetClass==='现金'||h.assetClass==='黄金')return null;
+  const t=h.ticker.trim();
+  const tUp=t.toUpperCase();
+
+  // Crypto → CoinGecko handles these
+  const CRYPTO=['BTC','ETH','SOL','BNB','XRP','DOGE','ADA','AVAX','DOT','MATIC','USDT','USDC'];
+  if(CRYPTO.includes(tUp)||h.assetClass==='加密')return null;
+
+  // HK stocks: currency HKD, or 4-5 digit code (NOT 6-digit A-share)
+  if(h.currency==='HKD'||(/^\d{4,5}$/.test(t)&&t.length<=5)){
+    return parseInt(t,10)+'.HK'; // 07747→7747.HK, 01810→1810.HK
+  }
+
+  // A-shares (6-digit), CNY-denominated funds, RMB ETFs — no reliable free API, skip
+  if(/^\d{6}$/.test(t)||h.currency==='CNY'||h.assetClass==='A股'||h.assetClass==='债券'||h.assetClass==='基金'){
+    return null;
+  }
+
+  // USD stocks: as-is
+  return tUp;
+}
+
+// Map crypto ticker → CoinGecko id
+const COINGECKO_IDS={
+  BTC:'bitcoin',ETH:'ethereum',SOL:'solana',BNB:'binancecoin',
+  XRP:'ripple',DOGE:'dogecoin',ADA:'cardano',AVAX:'avalanche-2',
+  DOT:'polkadot',MATIC:'matic-network',USDT:'tether',USDC:'usd-coin',
+};
+
+// Fetch one Yahoo Finance symbol via a proxy
+// Returns price (number) or null
+async function fetchOneYahoo(sym){
+  const path=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`;
+  const PROXIES=[
+    `https://corsproxy.io/?${encodeURIComponent(path)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(path)}`,
+  ];
+  for(const proxy of PROXIES){
+    try{
+      const res=await fetch(proxy,{signal:AbortSignal.timeout(10000)});
+      if(!res.ok)continue;
+      const data=await res.json();
+      const p=data?.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if(p&&p>0)return p;
+    }catch(e){
+      // try next proxy
+    }
+  }
+  return null;
+}
+
+// Fetch multiple crypto prices from CoinGecko (native CORS)
+async function fetchCoinGecko(holdings){
+  const cryptoHs=holdings.filter(h=>{
+    const t=h.ticker.trim().toUpperCase();
+    return !h.isCash&&(h.assetClass==='加密'||COINGECKO_IDS[t]);
+  });
+  if(!cryptoHs.length)return{};
+
+  const ids=[...new Set(cryptoHs.map(h=>COINGECKO_IDS[h.ticker.toUpperCase()]).filter(Boolean))];
+  if(!ids.length)return{};
+
+  try{
+    const url=`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`;
+    const res=await fetch(url,{signal:AbortSignal.timeout(10000)});
+    if(!res.ok)throw new Error('CoinGecko '+res.status);
+    const data=await res.json();
+    // map back to ticker → usd price
+    const result={};
+    cryptoHs.forEach(h=>{
+      const id=COINGECKO_IDS[h.ticker.toUpperCase()];
+      if(id&&data[id]?.usd)result[h.id]=data[id].usd;
+    });
+    return result; // {holdingId: price}
+  }catch(e){
+    console.warn('CoinGecko failed:',e.message);
+    return{};
+  }
+}
+
+async function fetchPrices(){
+  if(S.fetchingPrices)return;
+  const securities=S.holdings.filter(h=>!h.isCash&&h.assetClass!=='现金');
+  if(!securities.length)return;
+
+  S.fetchingPrices=true;S.priceStatus='updating';render();
+
+  const now=Date.now();
+  let updated=0;
+  const newPrices={}; // holdingId → price
+
+  try{
+    // ── Step 1: CoinGecko for crypto (one request for all) ──
+    const cgPrices=await fetchCoinGecko(securities);
+    Object.assign(newPrices,cgPrices);
+
+    // ── Step 2: Yahoo Finance for stocks (parallel, with concurrency cap) ──
+    const stockHs=securities.filter(h=>{
+      if(newPrices[h.id])return false; // already got from CoinGecko
+      return toYahooSym(h)!==null;
+    });
+
+    // Fetch in parallel, max 5 concurrent
+    const CONC=5;
+    for(let i=0;i<stockHs.length;i+=CONC){
+      const chunk=stockHs.slice(i,i+CONC);
+      const results=await Promise.allSettled(
+        chunk.map(async h=>{
+          const sym=toYahooSym(h);
+          const p=await fetchOneYahoo(sym);
+          return{id:h.id,price:p};
+        })
+      );
+      results.forEach(r=>{
+        if(r.status==='fulfilled'&&r.value.price){
+          newPrices[r.value.id]=r.value.price;
+        }
+      });
+      if(i+CONC<stockHs.length)await new Promise(r=>setTimeout(r,300));
+    }
+
+    // ── Apply all prices ──
+    S.holdings=S.holdings.map(h=>{
+      const p=newPrices[h.id];
+      if(p&&p>0){updated++;return{...h,currentPrice:p,priceUpdatedAt:now}}
+      return h;
+    });
+
+    if(updated>0){
+      DB.sh(S.holdings);
+      S.lastPriceUpdate=now;DB.spu(now);
+      S.priceStatus='live';
+      toast(`✓ 更新了 ${updated} 个价格`);
+    }else{
+      S.priceStatus='idle';
+      toast('⚠ 未能获取价格（市场可能已收盘或代理限速）');
+    }
+  }catch(e){
+    S.priceStatus='idle';
+    toast('⚠ 价格获取出错：'+e.message);
+  }
+  S.fetchingPrices=false;render();
+}
+
+// Auto-refresh every 5 min (only when page visible)
+function startPriceTimer(){
+  if(S.priceTimer)clearInterval(S.priceTimer);
+  S.priceTimer=setInterval(()=>{
+    if(document.visibilityState!=='hidden')fetchPrices();
+  },5*60*1000);
+}
+startPriceTimer();
+
+// ═══════════════════════════════════════════════════════════════
+// SNAPSHOTS — historical data points
+// Each snapshot: {date, totalValue, totalCost, totalPnl, byBroker:{id:CNY}}
+// ═══════════════════════════════════════════════════════════════
+
+function buildSnapshot(dateStr){
+  const t=tots();
+  const byBroker={};
+  BROKERS.forEach(b=>{
+    const bHs=S.holdings.filter(h=>h.brokerId===b.id);
+    if(bHs.length) byBroker[b.id]=tots(bHs).vC;
+  });
+  return{date:dateStr||new Date().toISOString().slice(0,10),totalValue:t.vC,totalCost:t.cC,totalPnl:t.pC,byBroker};
+}
+
+function mergeSnapshot(snap){
+  const rest=S.snapshots.filter(s=>s.date!==snap.date);
+  S.snapshots=[...rest,snap].sort((a,b)=>a.date.localeCompare(b.date));
+  DB.ssnap(S.snapshots);
+}
+
+function saveSnapshot(dateStr){
+  const s=buildSnapshot(dateStr);mergeSnapshot(s);return s;
+}
+
+// Auto-snapshot once per day, 3s after load (prices may refresh)
+(function autoSnapshot(){
+  const today=new Date().toISOString().slice(0,10);
+  if(!S.snapshots.some(s=>s.date===today)&&S.holdings.length>0)
+    setTimeout(()=>{saveSnapshot(today);},3000);
+})();
+
+// ── Parse a broker CSV (same format as current holdings import) ──
+// Returns array of holding-like objects with brokerId inferred
+function parseBrokerCSV(text){
+  const lines=text.trim().split('\n').map(l=>l.split(',').map(c=>c.trim().replace(/^"|"$/g,'')));
+  if(lines.length<2)return{brokerId:null,holdings:[]};
+  const H=lines[0].map(h=>h.toLowerCase());
+  function fi(...ks){for(const k of ks){const i=H.indexOf(k);if(i>=0)return i}return -1}
+  const ib   =fi('账户','broker');
+  const iq   =fi('数量','qty');
+  const icost=fi('成本价格','cost','avgcost','成本价');
+  const ip   =fi('收盘价格','price','currentprice','现价');
+  const icur =fi('币种','currency');
+  const iname=fi('名称','name');
+  const imarket=fi('市值','market value');
+  const ipnl =fi('未实现的损益','未实现损益','pnl');
+
+  let brokerId='tiger';
+  const holdings=[];
+
+  lines.slice(1).forEach(row=>{
+    if(row.length<3)return;
+    // Detect broker from first data row
+    if(ib>=0&&row[ib]){
+      const raw=row[ib];
+      const match=BROKERS.find(b=>raw.includes(b.name)||raw.toLowerCase().includes(b.id));
+      if(match)brokerId=match.id;
+    }
+    const cur=(icur>=0?row[icur]:'CNY').trim().replace('RMB','CNY');
+
+    // Market value (most reliable for snapshot)
+    let valueCNY=0;
+    if(imarket>=0){
+      const v=parseFloat(row[imarket].replace(/,/g,''));
+      if(!isNaN(v)&&v>0) valueCNY=toCNY(v,cur);
+    } else if(iq>=0&&ip>=0){
+      const qty=parseFloat((row[iq]||'0').replace(/,/g,''));
+      const price=parseFloat((row[ip]||'0').replace(/,/g,''));
+      if(!isNaN(qty)&&!isNaN(price)&&qty>0&&price>0)
+        valueCNY=toCNY(qty*price,cur);
+    }
+
+    // Cost (qty × avgCost)
+    let costCNY=0;
+    if(iq>=0&&icost>=0){
+      const qty=parseFloat((row[iq]||'0').replace(/,/g,''));
+      const cost=parseFloat((row[icost]||'0').replace(/,/g,''));
+      if(!isNaN(qty)&&!isNaN(cost)&&qty>0)
+        costCNY=toCNY(qty*Math.abs(cost),cur); // abs handles negative avgCost (Pingan style)
+    }
+
+    // PnL directly from CSV (most accurate)
+    let pnlCNY=0;
+    if(ipnl>=0){
+      const p=parseFloat((row[ipnl]||'0').replace(/,/g,''));
+      if(!isNaN(p)) pnlCNY=toCNY(p,cur);
+    } else if(valueCNY>0&&costCNY>0){
+      pnlCNY=valueCNY-costCNY;
+    }
+
+    if(valueCNY>0) holdings.push({valueCNY,costCNY,pnlCNY,name:iname>=0?row[iname]:''});
+  });
+
+  return{brokerId,holdings};
+}
+
+// Build a snapshot from multiple parsed broker files + a date
+function buildSnapshotFromFiles(dateStr,files){
+  const byBroker={};
+  let totalValue=0,totalCost=0,totalPnl=0;
+  files.forEach(({brokerId,holdings})=>{
+    const bv=holdings.reduce((s,h)=>s+h.valueCNY,0);
+    const bc=holdings.reduce((s,h)=>s+h.costCNY,0);
+    const bp=holdings.reduce((s,h)=>s+h.pnlCNY,0);
+    byBroker[brokerId]=(byBroker[brokerId]||0)+bv;
+    totalValue+=bv; totalCost+=bc; totalPnl+=bp;
+  });
+  // If cost is missing (0), derive from value-pnl
+  if(totalCost===0&&totalPnl!==0) totalCost=totalValue-totalPnl;
+  return{date:dateStr,totalValue,totalCost,totalPnl:totalPnl||totalValue-totalCost,byBroker};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXCHANGE RATES (daily, Frankfurter)
+// ═══════════════════════════════════════════════════════════════
+async function fetchRates(){
+  // Only fetch once per day
+  const today=new Date().toDateString();
+  if(S.rates.ratesDate===today){toast('汇率今日已是最新');return}
+  S.fetchingRates=true;render();
+  try{
+    const r=await fetch('https://api.frankfurter.app/latest?from=CNY&to=USD,HKD');
+    const d=await r.json();
+    if(d.rates){
+      S.rates={USD:1/d.rates.USD,HKD:1/d.rates.HKD,USDT:1/d.rates.USD,ratesDate:today};
+      DB.sr(S.rates);toast('✓ 汇率已更新（今日）');
+    }
+  }catch{toast('⚠ 汇率更新失败')}
+  S.fetchingRates=false;render();
+}
+
+// Auto-fetch rates on load if stale
+(function(){
+  const today=new Date().toDateString();
+  if(S.rates.ratesDate!==today)fetchRates();
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+function toast(msg){S.toast=msg;render();setTimeout(()=>{S.toast=null;render()},2700)}
+
+// ═══════════════════════════════════════════════════════════════
+// CSV PARSER
+// ═══════════════════════════════════════════════════════════════
+function parseCSV(text){
+  const lines=text.trim().split('\n').map(l=>l.split(',').map(c=>c.trim().replace(/^"|"$/g,'')));
+  if(lines.length<2)return[];
+  const H=lines[0].map(h=>h.toLowerCase());
+  function fi(...ks){for(const k of ks){const i=H.indexOf(k);if(i>=0)return i}return-1}
+  const ib=fi('账户','broker');const it=fi('代码','ticker');const in_=fi('名称','name');
+  const iq=fi('数量','qty');const ic=fi('成本价格','cost','avgcost','成本价');
+  const ip=fi('收盘价格','price','currentprice','现价');const icur=fi('币种','currency');
+  const ia=fi('资产类别','assetclass');const is=fi('策略','strategy');
+  return lines.slice(1).filter(r=>r.length>2).map(row=>{
+    const bRaw=ib>=0?row[ib]:'';
+    const bm=BROKERS.find(b=>bRaw.includes(b.name)||bRaw.toLowerCase().includes(b.id));
+    const rt=it>=0?row[it]:'';const m=rt.match(/\(([^)]+)\)/);const ticker=m?m[1]:rt;
+    const rn=in_>=0?row[in_]:'';const name=rn.replace(/\s*\([^)]+\)\s*/g,'').trim()||ticker;
+    const qty=parseFloat((iq>=0?row[iq]:'0').replace(/,/g,''));
+    const cost=parseFloat((ic>=0?row[ic]:'0').replace(/,/g,''));
+    const price=parseFloat((ip>=0?row[ip]:'0').replace(/,/g,''));
+    const cur=(icur>=0?row[icur]:'CNY').trim();
+    const asset=ia>=0?row[ia]:'美港股';const strat=is>=0?row[is]:'';
+    if(!ticker||isNaN(qty)||qty<=0)return null;
+    return{id:uid(),brokerId:bm?.id||'tiger',ticker,name,qty,avgCost:isNaN(cost)?0:cost,currentPrice:isNaN(price)?0:price,currency:cur,assetClass:asset,strategy:strat,sector:asset,priceUpdatedAt:null};
+  }).filter(Boolean);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+function render(){document.getElementById('app').innerHTML=html();ev()}
+
+function html(){
+  const upd=S.lastPriceUpdate?timeAgo(S.lastPriceUpdate):'从未';
+  const dotCls=S.priceStatus==='live'?'dot live':S.priceStatus==='updating'?'dot updating':'dot';
+  return`
+    ${S.toast?`<div class="toast">${S.toast}</div>`:''}
+    <div class="hdr">
+      <span class="logo">仓位</span>
+      <div class="hdr-acts">
+        <div class="price-status"><div class="${dotCls}"></div><span>${S.fetchingPrices?'获取中...':'更新 '+upd}</span></div>
+        <button class="btn-ic" id="xp" title="刷新股价">${S.fetchingPrices?'<span class="spin"></span>':'⟳'}</button>
+        <button class="btn-ic" id="xcsv">CSV</button>
+        <button class="btn-ic" id="xadd">＋</button>
+      </div>
+    </div>
+    <div class="tabs">
+      ${[['dashboard','总览'],['holdings','持仓'],['analysis','分析'],['history','历史'],['settings','设置']].map(([t,l])=>
+        `<button class="tab${S.tab===t?' active':''}" data-tab="${t}">${l}</button>`
+      ).join('')}
+    </div>
+    <div class="content">
+      ${S.tab==='dashboard'?tDash():''}
+      ${S.tab==='holdings' ?tHold():''}
+      ${S.tab==='analysis' ?tAna() :''}
+      ${S.tab==='history'  ?tHist():''}
+      ${S.tab==='settings' ?tSet() :''}
+    </div>
+    <nav class="bnav">
+      ${[['dashboard','◈','总览'],['holdings','≡','持仓'],['analysis','◎','分析'],['history','◷','历史'],['settings','⊙','设置']].map(([id,ic,lb])=>
+        `<button class="ni${S.tab===id?' active':''}" data-tab="${id}"><span class="ni-ic">${ic}</span><span class="ni-lb">${lb}</span></button>`
+      ).join('')}
+    </nav>
+    ${S.modal?modalHtml():''}
+  `;
+}
+
+function timeAgo(ts){
+  if(!ts)return'从未';
+  const d=Date.now()-ts;
+  if(d<60000)return'刚刚';
+  if(d<3600000)return Math.floor(d/60000)+'分钟前';
+  return Math.floor(d/3600000)+'小时前';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// RISK ALERTS
+// ═══════════════════════════════════════════════════════════════
+function buildRiskAlerts(){
+  const totalVCNY=tots().vC;
+  if(totalVCNY<=0)return'';
+  const alerts=[];
+
+  // 1. Single holding > 15% total
+  S.holdings.forEach(h=>{
+    if(h.isCash)return;
+    const m=hm(h);
+    const w=m.valueCNY/totalVCNY*100;
+    if(w>15) alerts.push({
+      level:'red',
+      icon:'⚠',
+      title:`${h.name} 集中度过高`,
+      detail:`占总仓 ${w.toFixed(1)}%，超过 15% 阈值`,
+      sub:h.ticker,
+    });
+  });
+
+  // 2. Single broker > 60%
+  BROKERS.forEach(b=>{
+    const bHs=S.holdings.filter(h=>h.brokerId===b.id);
+    const bV=tots(bHs).vC;
+    const w=bV/totalVCNY*100;
+    if(w>60) alerts.push({
+      level:'yellow',
+      icon:'◈',
+      title:`${b.name} 账户集中度高`,
+      detail:`占总仓 ${w.toFixed(1)}%，超过 60% 阈值`,
+      sub:b.type,
+    });
+  });
+
+  // 3. Single asset class > 50%
+  const acGroups=grp(S.holdings,'assetClass');
+  Object.entries(acGroups).forEach(([k,g])=>{
+    const w=g.vC/totalVCNY*100;
+    if(w>50) alerts.push({
+      level:'yellow',
+      icon:'◎',
+      title:`${k} 类别集中度高`,
+      detail:`占总仓 ${w.toFixed(1)}%，超过 50% 阈值`,
+      sub:'资产类别',
+    });
+  });
+
+  // 4. Deep loss > 30% on individual holding (ignore zero-cost)
+  S.holdings.forEach(h=>{
+    if(h.isCash||h.avgCost===0)return;
+    const m=hm(h);
+    if(m.pnlPct<-30) alerts.push({
+      level:'blue',
+      icon:'↓',
+      title:`${h.name} 深度亏损`,
+      detail:`当前亏损 ${m.pnlPct.toFixed(1)}%`,
+      sub:h.ticker,
+    });
+  });
+
+  // 5. No cash/defensive allocation
+  const defensiveV=S.holdings
+    .filter(h=>h.strategy==='现金'||h.strategy==='防守'||h.assetClass==='现金'||h.assetClass==='债券')
+    .reduce((s,h)=>s+hm(h).valueCNY,0);
+  const defPct=defensiveV/totalVCNY*100;
+  if(defPct<5&&S.holdings.length>3) alerts.push({
+    level:'blue',
+    icon:'🛡',
+    title:'防守仓位偏低',
+    detail:`现金+债券+防守仓合计仅 ${defPct.toFixed(1)}%`,
+    sub:'建议 ≥ 10%',
+  });
+
+  if(!alerts.length)return`
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;margin-bottom:12px;
+      background:rgba(74,222,144,.07);border-radius:14px;border:1px solid rgba(74,222,144,.2)">
+      <span style="font-size:18px">✓</span>
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--green)">配置健康</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">暂无集中度或亏损风险提示</div>
+      </div>
+    </div>`;
+
+  const COLORS={
+    red:  {bg:'rgba(255,107,122,.08)',border:'rgba(255,107,122,.25)',text:'var(--red)'},
+    yellow:{bg:'rgba(245,200,66,.07)',border:'rgba(245,200,66,.25)', text:'var(--gold)'},
+    blue: {bg:'rgba(200,184,255,.07)',border:'rgba(200,184,255,.2)',  text:'var(--accent)'},
+  };
+
+  return`<div style="margin-bottom:14px">
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);
+      font-family:'DM Mono',monospace;margin-bottom:8px">风险提示 · ${alerts.length} 条</div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      ${alerts.map(a=>{
+        const c=COLORS[a.level]||COLORS.blue;
+        return`<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;
+          border-radius:12px;background:${c.bg};border:1px solid ${c.border}">
+          <div style="font-size:18px;flex-shrink:0;width:24px;text-align:center">${a.icon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:500;color:${c.text}">${a.title}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${a.detail}</div>
+          </div>
+          <div style="font-size:10px;color:var(--muted2);font-family:'DM Mono',monospace;
+            flex-shrink:0;text-align:right">${a.sub}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function tDash(){
+  const {vC,cC,pC,pp}=tots();const isPos=pC>=0;
+  const bt={};BROKERS.forEach(b=>{bt[b.id]={vC:0,pC:0,cC:0,n:0}});
+  S.holdings.forEach(h=>{const m=hm(h);if(bt[h.brokerId]){bt[h.brokerId].vC+=m.valueCNY;bt[h.brokerId].pC+=m.pnlCNY;bt[h.brokerId].cC+=m.costCNY;bt[h.brokerId].n++}});
+  // Cash items
+  const cashHs=S.holdings.filter(h=>h.isCash||h.assetClass==='现金');
+  const cashTotal=cashHs.reduce((s,h)=>s+toCNY(h.cashAmount||h.currentPrice*h.qty||0,h.currency),0);
+  return`
+    <div class="hero" style="animation:fadeUp .5s ease both">
+      <div class="hero-lbl">总资产 · 截止 5月14日</div>
+      <div class="hero-amt">${fmt(fromCNY(vC))}</div>
+      <div class="hero-sub">成本 ${fmt(fromCNY(cC))} · ${S.ccy}${cashTotal>0?` · 现金 ${fmt(fromCNY(cashTotal))}`:''}</div>
+      <div class="hero-row">
+        <div class="pi"><div class="pl">未实现盈亏</div><div class="pv ${isPos?'pos':'neg'}">${isPos?'+':''}${fmt(fromCNY(pC))}</div></div>
+        <div class="pi"><div class="pl">总收益率</div><div class="pv ${isPos?'pos':'neg'}">${pct(pp)}</div></div>
+        <div class="pi"><div class="pl">持仓数</div><div class="pv">${S.holdings.length}</div></div>
+      </div>
+    </div>
+    <div class="ccy-row">${CCYS.map(c=>`<button class="ccy-btn${S.ccy===c?' active':''}" data-ccy="${c}">${c}</button>`).join('')}</div>
+    <div class="sec"><span>券商账户</span></div>
+    <div class="bgrid">
+      ${BROKERS.map(b=>{
+        const bv=fromCNY(bt[b.id].vC);
+        const bp=bt[b.id].cC>0?(bt[b.id].pC/bt[b.id].cC*100):0;
+        const bPos=bt[b.id].pC>=0;
+        const bwPct=vC>0?(bt[b.id].vC/vC*100):0;
+        return`<div class="bcard" data-b="${b.id}">
+          <div class="bcard-icon">${b.icon}</div>
+          <div class="bcard-name">${b.name}</div>
+          <div class="bcard-amt">${fmt(bv)}</div>
+          <div class="bcard-pnl ${bPos?'pos':'neg'}">${pct(bp)}</div>
+          <div class="bcard-n">${bt[b.id].n} 标的 · ${wPct(bwPct)}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="sec"><span>风险提示</span></div>
+    <div style="padding:0 20px">${buildRiskAlerts()}</div>
+    <div class="sec"><span>快速操作</span></div>
+    <div style="padding:0 20px 8px;display:flex;gap:8px;">
+      <button class="btn-s" id="xadd2" style="margin:0">＋ 添加标的</button>
+      <button class="btn-s" id="xcash" style="margin:0">💰 添加现金</button>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HOLDINGS — dynamic weight denominator
+// ═══════════════════════════════════════════════════════════════
+function tHold(){
+  const assets=uniq('assetClass'),strats=uniq('strategy');
+  let hs=[...S.holdings];
+  if(S.fb!=='all')hs=hs.filter(h=>h.brokerId===S.fb);
+  if(S.fa!=='all')hs=hs.filter(h=>h.assetClass===S.fa);
+  if(S.fs!=='all')hs=hs.filter(h=>h.strategy===S.fs);
+  hs.sort((a,b)=>hm(b).valueCNY-hm(a).valueCNY);
+
+  // Dynamic denominator = total of the FILTERED set
+  const denomVCNY=tots(hs).vC;
+  // Also track global total for tooltip context
+  const globalVCNY=tots().vC;
+
+  // Label for the denominator context
+  let denomLabel='总仓';
+  if(S.fb!=='all'&&S.fa==='all'&&S.fs==='all') denomLabel=BROKERS.find(b=>b.id===S.fb)?.name||'账户';
+  else if(S.fa!=='all'&&S.fb==='all'&&S.fs==='all') denomLabel=S.fa;
+  else if(S.fs!=='all'&&S.fb==='all'&&S.fa==='all') denomLabel=S.fs;
+  else if(S.fb!=='all'||S.fa!=='all'||S.fs!=='all') denomLabel='筛选内';
+
+  return`
+    <div class="fbar">
+      <button class="fchip${S.fb==='all'?' active':''}" data-fb="all">全部</button>
+      ${BROKERS.filter(b=>S.holdings.some(h=>h.brokerId===b.id)).map(b=>
+        `<button class="fchip${S.fb===b.id?' active':''}" data-fb="${b.id}">${b.icon}${b.name}</button>`
+      ).join('')}
+    </div>
+    <div class="fbar" style="padding-top:0">
+      <button class="fchip${S.fa==='all'?' active':''}" data-fa="all">全部类别</button>
+      ${assets.map(a=>`<button class="fchip${S.fa===a?' active':''}" data-fa="${a}">${a}</button>`).join('')}
+    </div>
+    <div class="fbar" style="padding-top:0">
+      <button class="fchip${S.fs==='all'?' active':''}" data-fs="all">全部策略</button>
+      ${strats.map(s=>`<button class="fchip${S.fs===s?' active':''}" data-fs="${s}">${s}</button>`).join('')}
+    </div>
+    ${denomLabel!=='总仓'?`
+      <div style="padding:0 20px 6px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:.5px">
+        占比分母：<span style="color:var(--accent)">${denomLabel}</span> 合计 ${fmt(fromCNY(denomVCNY))}
+        ${denomVCNY<globalVCNY?` · 占总仓 ${wPct(globalVCNY>0?denomVCNY/globalVCNY*100:0)}`:''}
+      </div>`:''}
+    <div class="hlist">
+      ${hs.length===0?`<div class="empty"><div style="font-size:40px;margin-bottom:10px">📭</div><div style="font-size:13px">没有符合条件的持仓</div></div>`:
+        hs.map(h=>{
+          const m=hm(h);const b=broker(h.brokerId);
+          const dv=fromCNY(m.valueCNY);const isPos=m.pnl>=0||h.avgCost===0;
+          const ac=AC_COL[h.assetClass]||'#888';const sc=ST_COL[h.strategy]||'#888';
+          const short=(h.isCash?'💰':h.ticker).slice(0,6);
+          const freshPrice=h.priceUpdatedAt&&(Date.now()-h.priceUpdatedAt)<10*60*1000;
+          // Dynamic weight: denominator is the filtered set
+          const dw=denomVCNY>0?m.valueCNY/denomVCNY*100:0;
+          // Global weight for reference
+          const gw=globalVCNY>0?m.valueCNY/globalVCNY*100:0;
+          const showBoth=denomLabel!=='总仓'&&Math.abs(dw-gw)>0.05;
+          return`<div class="hrow" data-hid="${h.id}">
+            <div class="hticker" style="background:${ac}1a;color:${ac}">${short}</div>
+            <div class="hinfo">
+              <div class="hname">${h.name}${h.isCash?` <span class="cash-badge">现金</span>`:''}</div>
+              <div class="hmeta">
+                <span>${b.icon}</span>
+                ${h.assetClass?`<span class="tag" style="background:${ac}18;color:${ac}">${h.assetClass}</span>`:''}
+                ${h.strategy&&!h.isCash?`<span class="tag" style="background:${sc}18;color:${sc}">${h.strategy}</span>`:''}
+                ${freshPrice?`<span class="pupd fresh">● 实时</span>`:''}
+              </div>
+              <div class="hwbar"><div class="hwfill" style="background:${ac};width:${Math.min(dw,100).toFixed(1)}%"></div></div>
+            </div>
+            <div class="hright">
+              <div class="hval">${fmt(dv)}</div>
+              <div class="hpnl ${isPos?'pos':'neg'}">${h.isCash?'现金':h.avgCost===0?'—':pct(m.pnlPct)}</div>
+              <div style="font-size:9px;color:var(--gold);font-family:'DM Mono',monospace;margin-top:2px;font-weight:500">${wPct(dw)} ${denomLabel}</div>
+              ${showBoth?`<div style="font-size:9px;color:var(--muted2);font-family:'DM Mono',monospace">${wPct(gw)} 总仓</div>`:''}
+            </div>
+          </div>`;
+        }).join('')}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ANALYSIS
+// ═══════════════════════════════════════════════════════════════
+// ─── tAna: three pivot views ────────────────────────────────────
+function tAna(){
+  return`
+    <div class="awrap" style="padding-top:4px">
+      ${buildRiskPanel()}
+      <div class="ptoggle">
+        ${[['asset','资产类别'],['broker','账户策略'],['matrix','热力矩阵']].map(([k,l])=>
+          `<button class="pbtn${S.pivot===k?' active':''}" data-pv="${k}">${l}</button>`
+        ).join('')}
+      </div>
+      ${S.pivot==='asset'  ? pivAsset()  :''}
+      ${S.pivot==='broker' ? pivBroker() :''}
+      ${S.pivot==='matrix' ? pivMatrix() :''}
+    </div>
+  `;
+}
+
+// ─── Helper: SVG donut ──────────────────────────────────────────
+function mkDonut(groups,allV,colorMap,centerLabel){
+  const r=50,cx=65,cy=65,circ=2*Math.PI*r;let off=0;
+  const segs=groups.map(([k,g])=>{
+    const c=colorMap[k]||'#888',p=allV>0?g.vC/allV:0,dash=p*circ;
+    const s=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c}" stroke-width="14"
+      stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-off}" stroke-linecap="butt"/>`;
+    off+=dash;return s;
+  }).join('');
+  return`<svg class="dn" viewBox="0 0 130 130" style="width:130px;height:130px;transform:rotate(-90deg)">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="14"/>
+    ${segs}
+  </svg>
+  <div class="dctr"><div class="dctr-v">${groups.length}</div><div class="dctr-l">${centerLabel}</div></div>`;
+}
+
+// ─── Helper: Treemap (pure SVG, no lib) ─────────────────────────
+// Squarified layout for a flat list of {key,vC,color}
+function mkTreemap(items,W,H,totalV){
+  if(!items.length)return'';
+  // Simple row-based layout (good enough for ~10 items on mobile)
+  // Sort desc
+  const sorted=[...items].sort((a,b)=>b.vC-a.vC);
+  const rects=[];
+  let y=0;
+  // Group into rows of ~2-3 items where widths are proportional
+  let i=0;
+  while(i<sorted.length&&y<H){
+    // Try to put items in a row until the next item would be very small
+    let rowItems=[];
+    let rowV=0;
+    let j=i;
+    // Greedy: add items while cumulative pct > 15% or first item
+    while(j<sorted.length){
+      const pct=sorted[j].vC/totalV;
+      if(rowItems.length>0&&pct<0.06)break; // tiny items: stop row
+      if(rowItems.length>=3)break;           // max 3 per row
+      rowItems.push(sorted[j]);
+      rowV+=sorted[j].vC;
+      j++;
+    }
+    if(!rowItems.length)break;
+    const rowH=Math.max((rowV/totalV)*H, 28);
+    let x=0;
+    rowItems.forEach(item=>{
+      const w=(item.vC/rowV)*W;
+      const pct=totalV>0?item.vC/totalV*100:0;
+      const fontSize=w>70?12:w>44?10:9;
+      const nameWords=item.key.length>6?item.key.slice(0,6)+'…':item.key;
+      rects.push(`
+        <g>
+          <rect x="${x+1}" y="${y+1}" width="${Math.max(w-2,0)}" height="${Math.max(rowH-2,0)}"
+            rx="6" fill="${item.color}" opacity="0.82"/>
+          <rect x="${x+1}" y="${y+1}" width="${Math.max(w-2,0)}" height="${Math.max(rowH-2,0)}"
+            rx="6" fill="url(#tm-grad)" opacity="0.3"/>
+          ${rowH>22&&w>30?`
+            <text x="${x+w/2}" y="${y+rowH/2-4}" text-anchor="middle"
+              font-family="DM Mono,monospace" font-size="${fontSize}" fill="white" font-weight="500">${nameWords}</text>
+            <text x="${x+w/2}" y="${y+rowH/2+10}" text-anchor="middle"
+              font-family="DM Mono,monospace" font-size="${Math.max(fontSize-1,8)}" fill="rgba(255,255,255,0.8)">${pct.toFixed(1)}%</text>
+          `:''}
+        </g>`);
+      x+=w;
+    });
+    y+=rowH;
+    i=j;
+  }
+  return`<svg viewBox="0 0 ${W} ${y}" width="100%" style="border-radius:12px;overflow:hidden;display:block">
+    <defs>
+      <linearGradient id="tm-grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="white" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="black" stop-opacity="0.15"/>
+      </linearGradient>
+    </defs>
+    ${rects.join('')}
+  </svg>`;
+}
+
+
+// ─── VIEW 1: 资产类别 — interactive donut + detail panel ────────
+function pivAsset(){
+  const groups=grp(S.holdings,'assetClass');
+  const totalVCNY=tots().vC;
+  const sorted=Object.entries(groups).sort((a,b)=>b[1].vC-a[1].vC);
+  const sel=S.selAsset;
+
+  // Donut SVG (interactive)
+  const r=54,cx=70,cy=70,circ=2*Math.PI*r;let off=0;
+  const segs=sorted.map(([k,g])=>{
+    const c=AC_COL[k]||'#888',p=totalVCNY>0?g.vC/totalVCNY:0,dash=p*circ;
+    const isSelected=sel===k;
+    const seg=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c}"
+      stroke-width="${isSelected?18:13}" stroke-dasharray="${dash} ${circ-dash}"
+      stroke-dashoffset="${-off}" stroke-linecap="butt"
+      opacity="${sel&&!isSelected?0.28:1}"
+      style="cursor:pointer;transition:all .25s" data-ac="${k}"/>`;
+    off+=dash;return seg;
+  }).join('');
+
+  const centerTxt=sel
+    ?`<div style="font-family:'DM Serif Display',serif;font-size:16px;line-height:1.1;text-align:center;color:${AC_COL[sel]||'#fff'}">${sel}</div>
+       <div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:'DM Mono',monospace">${totalVCNY>0?(groups[sel]?.vC/totalVCNY*100).toFixed(1)+'%':''}</div>`
+    :`<div style="font-family:'DM Serif Display',serif;font-size:22px">${sorted.length}</div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">类别</div>`;
+
+  const donutCard=`<div class="dcard" style="margin-bottom:12px">
+    <div style="position:relative;width:140px;height:140px;margin:0 auto 16px">
+      <svg viewBox="0 0 140 140" style="width:140px;height:140px;transform:rotate(-90deg)">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="13"/>
+        ${segs}
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+        ${centerTxt}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      ${sorted.map(([k,g])=>{
+        const c=AC_COL[k]||'#888',p=totalVCNY>0?g.vC/totalVCNY*100:0;
+        const pp=g.cC>0?g.pC/g.cC*100:0;const isPos=g.pC>=0;
+        const isActive=sel===k;
+        return`<div data-ac="${k}" style="display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:8px;
+          background:${isActive?c+'22':'transparent'};border:1px solid ${isActive?c+'55':'transparent'};
+          cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent">
+          <div style="width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0;${sel&&!isActive?'opacity:.3':''}"></div>
+          <span style="font-size:11px;flex:1;${sel&&!isActive?'color:var(--muted2)':''}">${k}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gold)">${p.toFixed(1)}%</span>
+          <span style="font-family:'DM Mono',monospace;font-size:9px;color:${isPos?'var(--green)':'var(--red)'}">${pct(pp)}</span>
+        </div>`;
+      }).join('')}
+    </div>
+    ${sel?`<div style="margin-top:10px;text-align:center">
+      <span data-ac-clear="1" style="font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline">
+        取消选择
+      </span></div>`:''}
+  </div>`;
+
+  // Detail panel for selected class
+  let detailHtml='';
+  if(sel&&groups[sel]){
+    const g=groups[sel];
+    const c=AC_COL[sel]||'#888';
+    const items=[...g.items].sort((a,b)=>hm(b).valueCNY-hm(a).valueCNY);
+    const t=tots(g.items);
+    const pnlPct=t.cC>0?t.pC/t.cC*100:0;
+    const isPos=t.pC>=0;
+    const wt=totalVCNY>0?t.vC/totalVCNY*100:0;
+
+    // Treemap of top holdings in this class
+    const top5=items.slice(0,5);
+    const tmItems=top5.map(h=>({
+      key:h.ticker.length>6?h.ticker.slice(0,6):h.ticker,
+      vC:hm(h).valueCNY,color:c
+    }));
+
+    const holdingRows=items.map((h,i)=>{
+      const m=hm(h);
+      const hw=g.vC>0?m.valueCNY/g.vC*100:0;
+      const isHPos=m.pnl>=0||h.avgCost===0;
+      return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;
+        border-bottom:${i<items.length-1?'1px solid var(--border)':'none'}">
+        <span style="font-family:'DM Mono',monospace;font-size:9px;color:${c};
+          width:44px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis">${h.ticker}</span>
+        <span style="font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:11px">${fmt(fromCNY(m.valueCNY))}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);min-width:36px;text-align:right">${hw.toFixed(1)}%</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;min-width:44px;text-align:right;
+          color:${isHPos?'var(--green)':'var(--red)'}">${h.avgCost===0||h.isCash?'—':pct(m.pnlPct)}</span>
+      </div>`;
+    }).join('');
+
+    detailHtml=`<div data-detail-panel style="background:var(--bg2);border-radius:18px;border:1px solid ${c}33;
+      padding:18px;margin-bottom:10px;animation:fadeUp .3s ease">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div style="width:4px;height:36px;border-radius:2px;background:${c}"></div>
+        <div>
+          <div style="font-size:16px;font-weight:500;color:${c}">${sel}</div>
+          <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">${items.length} 个标的</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+        ${[
+          ['总仓位',fmt(fromCNY(t.vC)),'var(--text)'],
+          ['占总资产',wt.toFixed(1)+'%','var(--gold)'],
+          ['总成本',fmt(fromCNY(t.cC)),'var(--muted)'],
+          ['总收益',(isPos?'+':'')+fmt(fromCNY(t.pC)),isPos?'var(--green)':'var(--red)'],
+          ['收益率',pct(pnlPct),isPos?'var(--green)':'var(--red)'],
+          ['标的数',items.length+'','var(--accent)'],
+        ].map(([lbl,val,col])=>`
+          <div style="background:var(--bg3);border-radius:10px;padding:10px 10px 8px;border:1px solid var(--border)">
+            <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;
+              font-family:'DM Mono',monospace;margin-bottom:4px">${lbl}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:${col}">${val}</div>
+          </div>`).join('')}
+      </div>
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;
+        font-family:'DM Mono',monospace;margin-bottom:8px">前 ${Math.min(5,items.length)} 大标的 · 面积=仓位</div>
+      ${mkTreemap(tmItems,300,110,g.vC)}
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;
+        font-family:'DM Mono',monospace;margin:14px 0 8px">全部标的 · 类内占比</div>
+      <div>${holdingRows}</div>
+      <div style="margin-top:10px;font-size:10px;color:var(--muted2);font-family:'DM Mono',monospace;line-height:1.8">
+        ＊ 年化收益率暂不可计算（需补充买入日期）
+      </div>
+    </div>`;
+  }
+
+  return donutCard+detailHtml;
+}
+
+// ─── VIEW 2: 账户 × 策略 — stacked bar + clickable bottom drawer ─
+const STRAT_ORDER=['现金','防守','配置','波段','投机','其他'];
+
+function pivBroker(){
+  const totalVCNY=tots().vC;
+  const activeBrokers=BROKERS.filter(b=>S.holdings.some(h=>h.brokerId===b.id));
+
+  const brokerData=activeBrokers.map(b=>{
+    const bHs=S.holdings.filter(h=>h.brokerId===b.id);
+    const bTotal=tots(bHs).vC;
+    const byStrat={};
+    STRAT_ORDER.forEach(s=>{ byStrat[s]=tots(bHs.filter(h=>h.strategy===s)).vC; });
+    const pp=tots(bHs);
+    return{b,bTotal,byStrat,pnlPct:pp.cC>0?pp.pC/pp.cC*100:0};
+  });
+
+  const legend=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+    ${STRAT_ORDER.map(s=>`
+      <div style="display:flex;align-items:center;gap:5px">
+        <div style="width:10px;height:10px;border-radius:2px;background:${ST_COL[s]||'#888'}"></div>
+        <span style="font-size:11px;color:var(--muted)">${s}</span>
+      </div>`).join('')}
+  </div>`;
+
+  const bars=brokerData.map(({b,bTotal,byStrat,pnlPct})=>{
+    const bPct=totalVCNY>0?bTotal/totalVCNY*100:0;
+    const isPos=pnlPct>=0;
+
+    const segments=STRAT_ORDER.map(s=>{
+      const v=byStrat[s]||0,sp=bTotal>0?v/bTotal*100:0;
+      if(sp<0.5)return'';
+      const c=ST_COL[s]||'#888';
+      return`<div style="height:100%;width:${sp.toFixed(2)}%;background:${c};position:relative;overflow:hidden;
+        transition:width .5s;cursor:pointer;-webkit-tap-highlight-color:transparent"
+        data-sd-broker="${b.id}" data-sd-strat="${s}">
+        ${sp>9?`<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+          font-size:9px;color:rgba(255,255,255,.9);font-family:'DM Mono',monospace;
+          pointer-events:none;white-space:nowrap;text-align:center;line-height:1.3">
+          ${s}<br>${sp.toFixed(0)}%</span>`:''}
+      </div>`;
+    }).join('');
+
+    const details=STRAT_ORDER.filter(s=>(byStrat[s]||0)>0).map(s=>{
+      const v=byStrat[s],c=ST_COL[s]||'#888';
+      const sp=bTotal>0?v/bTotal*100:0,gp=totalVCNY>0?v/totalVCNY*100:0;
+      const isActive=S.stratDrawer?.brokerId===b.id&&S.stratDrawer?.strategy===s;
+      return`<div data-sd-broker="${b.id}" data-sd-strat="${s}"
+        style="display:flex;align-items:center;gap:8px;padding:8px 6px;
+        border-bottom:1px solid var(--border);cursor:pointer;border-radius:6px;
+        background:${isActive?c+'14':'transparent'};transition:background .15s;
+        -webkit-tap-highlight-color:transparent">
+        <div style="width:6px;height:6px;border-radius:50%;background:${c};flex-shrink:0"></div>
+        <span style="font-size:12px;flex:1;color:var(--muted)">${s}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:11px">${fmt(fromCNY(v))}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:${c};min-width:36px;text-align:right">${sp.toFixed(1)}%</span>
+        <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted2);min-width:40px;text-align:right">${gp.toFixed(1)}%总</span>
+        <span style="color:var(--muted2);font-size:11px;margin-left:2px">${isActive?'▾':'›'}</span>
+      </div>`;
+    }).join('');
+
+    return`<div style="background:var(--bg2);border-radius:18px;border:1px solid var(--border);padding:16px 16px 4px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div style="font-size:14px;font-weight:500">${b.icon} ${b.name}</div>
+          <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px">${b.type} · 占总仓 ${bPct.toFixed(1)}%</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'DM Mono',monospace;font-size:14px">${fmt(fromCNY(bTotal))}</div>
+          <div style="font-size:10px;font-family:'DM Mono',monospace;color:${isPos?'var(--green)':'var(--red)'};margin-top:2px">${pct(pnlPct)}</div>
+        </div>
+      </div>
+      <div style="display:flex;height:32px;border-radius:8px;overflow:hidden;margin-bottom:10px;gap:1px">${segments}</div>
+      <div style="margin:0 -4px">${details}</div>
+    </div>`;
+  }).join('');
+
+  // Strategy drawer (bottom sheet, fixed position)
+  let drawerHtml='';
+  if(S.stratDrawer){
+    const{brokerId,strategy}=S.stratDrawer;
+    const b=broker(brokerId);
+    const c=ST_COL[strategy]||'#888';
+    const hs=S.holdings.filter(h=>h.brokerId===brokerId&&h.strategy===strategy)
+      .sort((a,bh)=>hm(bh).valueCNY-hm(a).valueCNY);
+    const t=tots(hs);
+    const pp=t.cC>0?t.pC/t.cC*100:0,isPos=t.pC>=0;
+
+    const rows=hs.map((h,i)=>{
+      const m=hm(h);
+      const hw=t.vC>0?m.valueCNY/t.vC*100:0;
+      const gw=totalVCNY>0?m.valueCNY/totalVCNY*100:0;
+      const isHPos=m.pnl>=0||h.avgCost===0;
+      return`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;
+        border-bottom:${i<hs.length-1?'1px solid var(--border)':'none'}">
+        <div style="width:38px;height:38px;border-radius:10px;background:${c}1a;color:${c};
+          font-size:8px;font-family:'DM Mono',monospace;display:flex;align-items:center;
+          justify-content:center;text-align:center;flex-shrink:0;padding:2px;line-height:1.3">
+          ${h.ticker.slice(0,6)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name}</div>
+          <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px">${h.currency} · ${h.qty.toLocaleString()} 股/份</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:'DM Mono',monospace;font-size:13px">${fmt(fromCNY(m.valueCNY))}</div>
+          <div style="font-size:10px;font-family:'DM Mono',monospace;margin-top:2px">
+            <span style="color:var(--gold)">${hw.toFixed(1)}%</span>
+            <span style="color:var(--muted2)"> · ${gw.toFixed(1)}%总</span>
+          </div>
+          <div style="font-size:10px;font-family:'DM Mono',monospace;
+            color:${isHPos?'var(--green)':'var(--red)'}">
+            ${h.avgCost===0||h.isCash?'现金':pct(m.pnlPct)}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    drawerHtml=`
+      <div style="position:fixed;inset:0;z-index:400;display:flex;flex-direction:column;justify-content:flex-end">
+        <div id="drawer-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)"></div>
+        <div style="position:relative;background:var(--bg2);border-radius:24px 24px 0 0;
+          border:1px solid var(--border2);border-bottom:none;
+          max-height:76dvh;overflow-y:auto;scrollbar-width:none;
+          padding-bottom:calc(env(safe-area-inset-bottom,20px) + 84px);
+          animation:slideUp .28s cubic-bezier(.32,.72,0,1)">
+          <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0"></div>
+          <div style="padding:14px 20px 12px;display:flex;align-items:center;justify-content:space-between;
+            border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:10px;height:10px;border-radius:50%;background:${c}"></div>
+                <span style="font-size:15px;font-weight:500">${b.icon} ${b.name} · ${strategy}</span>
+              </div>
+              <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:4px">
+                ${hs.length} 个标的 ·
+                <span style="color:${isPos?'var(--green)':'var(--red)'}">${pct(pp)}</span>
+              </div>
+            </div>
+            <button id="drawer-close" style="width:30px;height:30px;border-radius:50%;
+              border:1px solid var(--border2);background:var(--bg3);color:var(--muted);
+              font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+              -webkit-tap-highlight-color:transparent">✕</button>
+          </div>
+          <div style="display:flex;padding:12px 20px 12px;border-bottom:1px solid var(--border);gap:0">
+            ${[['市值',fmt(fromCNY(t.vC)),'var(--text)'],
+               ['成本',fmt(fromCNY(t.cC)),'var(--muted)'],
+               ['收益',(isPos?'+':'')+fmt(fromCNY(t.pC)),isPos?'var(--green)':'var(--red)']
+              ].map(([l,v,col],i)=>`
+              <div style="flex:1;${i>0?'padding-left:12px;border-left:1px solid var(--border)':''}">
+                <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-family:'DM Mono',monospace">${l}</div>
+                <div style="font-family:'DM Mono',monospace;font-size:13px;margin-top:3px;color:${col}">${v}</div>
+              </div>`).join('')}
+          </div>
+          <div style="padding:4px 20px 0">${rows}</div>
+        </div>
+      </div>`;
+  }
+
+  return`<div>${legend}${bars}</div>${drawerHtml}`;
+}
+
+
+// ─── VIEW 3: 热力矩阵 — broker × strategy ───────────────────────
+function pivMatrix(){
+  const totalVCNY=tots().vC;
+  const activeBrokers=BROKERS.filter(b=>S.holdings.some(h=>h.brokerId===b.id));
+
+  function cell(brokerId,strat){
+    const hs=S.holdings.filter(h=>
+      (!brokerId||h.brokerId===brokerId)&&(!strat||h.strategy===strat)
+    );
+    if(!hs.length)return null;
+    const t=tots(hs);
+    return{vC:t.vC,pp:t.pp,pct:totalVCNY>0?t.vC/totalVCNY*100:0,n:hs.length};
+  }
+
+  function heat(vC,isPos){
+    const i=totalVCNY>0?Math.min(vC/totalVCNY,0.45)/0.45:0;
+    return isPos
+      ?`rgba(74,222,144,${0.06+i*0.24})`
+      :`rgba(255,107,122,${0.06+i*0.24})`;
+  }
+
+  // Active strategies in fixed order
+  const activeStrats=STRAT_ORDER.filter(s=>S.holdings.some(h=>h.strategy===s));
+
+  return`
+    <div class="mwrap">
+      <div class="mlbl" style="margin-bottom:4px">账户 × 策略 · 热力图</div>
+      <div style="font-size:10px;color:var(--muted2);font-family:'DM Mono',monospace;margin-bottom:12px">每格：市值 · 占总仓% · 收益率</div>
+      <div class="mscroll">
+        <table class="mx">
+          <thead>
+            <tr>
+              <th style="text-align:left">账户</th>
+              ${activeStrats.map(s=>`<th style="color:${ST_COL[s]||'#888'}">${s}</th>`).join('')}
+              <th style="color:var(--text)">合计</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${activeBrokers.map(b=>{
+              const rowTotal=cell(b.id,null);
+              return`<tr>
+                <td style="color:var(--text);white-space:nowrap">${b.icon} ${b.name}</td>
+                ${activeStrats.map(s=>{
+                  const c=cell(b.id,s);
+                  if(!c)return`<td style="color:var(--muted2);text-align:center">—</td>`;
+                  const bg=heat(c.vC,c.pp>=0);
+                  return`<td>
+                    <div class="mc" style="background:${bg};min-width:64px">
+                      <div style="font-size:10px;font-weight:500">${fmt(fromCNY(c.vC))}</div>
+                      <div style="font-size:9px;color:var(--gold)">${c.pct.toFixed(1)}%</div>
+                      <div style="font-size:9px;color:${c.pp>=0?'var(--green)':'var(--red)'}">${pct(c.pp)}</div>
+                    </div>
+                  </td>`;
+                }).join('')}
+                <td>
+                  <div style="font-size:10px;font-weight:500">${rowTotal?fmt(fromCNY(rowTotal.vC)):'—'}</div>
+                  <div style="font-size:9px;color:var(--gold)">${rowTotal?rowTotal.pct.toFixed(1)+'%':'—'}</div>
+                  <div style="font-size:9px;color:${rowTotal&&rowTotal.pp>=0?'var(--green)':'var(--red)'}">${rowTotal?pct(rowTotal.pp):'—'}</div>
+                </td>
+              </tr>`;
+            }).join('')}
+            <tr style="border-top:1px solid var(--border2)">
+              <td style="color:var(--text)">合计</td>
+              ${activeStrats.map(s=>{
+                const c=cell(null,s);
+                return c?`<td>
+                  <div class="mc" style="background:rgba(255,255,255,.04);min-width:64px">
+                    <div style="font-size:10px">${fmt(fromCNY(c.vC))}</div>
+                    <div style="font-size:9px;color:var(--gold)">${c.pct.toFixed(1)}%</div>
+                    <div style="font-size:9px;color:${c.pp>=0?'var(--green)':'var(--red)'}">${pct(c.pp)}</div>
+                  </div>
+                </td>`:`<td style="color:var(--muted2)">—</td>`;
+              }).join('')}
+              <td>
+                <div style="font-size:11px;font-weight:500">${fmt(fromCNY(totalVCNY))}</div>
+                <div style="font-size:9px;color:var(--gold)">100%</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HISTORY TAB
+// ═══════════════════════════════════════════════════════════════
+
+// Filter snapshots by selected range
+function filteredSnaps(){
+  const snaps=S.snapshots;
+  if(!snaps.length)return[];
+  const now=new Date();
+  const cutoff={
+    '1M': new Date(now.getFullYear(),now.getMonth()-1,now.getDate()),
+    '3M': new Date(now.getFullYear(),now.getMonth()-3,now.getDate()),
+    '6M': new Date(now.getFullYear(),now.getMonth()-6,now.getDate()),
+    '1Y': new Date(now.getFullYear()-1,now.getMonth(),now.getDate()),
+    'ALL':new Date(0),
+  }[S.histRange]||new Date(0);
+  const cutStr=cutoff.toISOString().slice(0,10);
+  return snaps.filter(s=>s.date>=cutStr);
+}
+
+// Build pure-SVG polyline chart for 3 metrics
+function buildHistChart(snaps){
+  if(snaps.length<2)return'';
+  const W=320,H=160,PAD={t:12,r:8,b:28,l:52};
+  const IW=W-PAD.l-PAD.r,IH=H-PAD.t-PAD.b;
+
+  // Extract series in display currency
+  const series={
+    value: snaps.map(s=>fromCNY(s.totalValue)),
+    pnl:   snaps.map(s=>fromCNY(s.totalPnl)),
+    pnlPct:snaps.map(s=>s.totalCost>0?s.totalPnl/s.totalCost*100:0),
+  };
+  const metric=S.histMetric;
+  const vals=series[metric];
+
+  const vMin=Math.min(...vals),vMax=Math.max(...vals);
+  const vRange=vMax-vMin||1;
+  const xStep=IW/(snaps.length-1);
+
+  function px(i){ return PAD.l+i*xStep; }
+  function py(v){ return PAD.t+IH-(v-vMin)/vRange*IH; }
+
+  // Polyline points
+  const pts=vals.map((v,i)=>`${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
+
+  // Fill area
+  const fillPts=`${PAD.l},${PAD.t+IH} ${pts} ${px(snaps.length-1)},${PAD.t+IH}`;
+
+  // Color
+  const isPos=vals[vals.length-1]>=vals[0];
+  const lineCol=isPos?'#4ade90':'#ff6b7a';
+
+  // Y-axis labels (3 ticks)
+  const yTicks=[vMin,vMin+vRange/2,vMax];
+  const yLabels=yTicks.map((v,i)=>{
+    const y=py(v);
+    let lbl=metric==='pnlPct'?v.toFixed(1)+'%':fmt(v);
+    return`<text x="${PAD.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="rgba(240,239,245,0.35)" font-family="DM Mono,monospace">${lbl}</text>`;
+  }).join('');
+
+  // X-axis labels (first, mid, last)
+  const xIdxs=[0,Math.floor((snaps.length-1)/2),snaps.length-1];
+  const xLabels=xIdxs.map(i=>{
+    const d=snaps[i].date.slice(5); // MM-DD
+    return`<text x="${px(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="9" fill="rgba(240,239,245,0.35)" font-family="DM Mono,monospace">${d}</text>`;
+  }).join('');
+
+  // Data dots (only at last point)
+  const lastX=px(snaps.length-1),lastY=py(vals[snaps.length-1]);
+  const dot=`<circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="3.5" fill="${lineCol}"/>`;
+
+  // Zero line for pnl/pnlPct
+  let zeroLine='';
+  if(metric!=='value'&&vMin<0&&vMax>0){
+    const zy=py(0);
+    zeroLine=`<line x1="${PAD.l}" y1="${zy.toFixed(1)}" x2="${PAD.l+IW}" y2="${zy.toFixed(1)}" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-dasharray="3 3"/>`;
+  }
+
+  return`<svg viewBox="0 0 ${W} ${H}" style="width:100%;overflow:visible">
+    <defs>
+      <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${lineCol}" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="${lineCol}" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    <!-- Grid lines -->
+    ${[0,1,2].map(i=>{
+      const y=PAD.t+i*(IH/2);
+      return`<line x1="${PAD.l}" y1="${y.toFixed(1)}" x2="${PAD.l+IW}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.06)" stroke-width="1"/>`;
+    }).join('')}
+    ${zeroLine}
+    <!-- Fill area -->
+    <polygon points="${fillPts}" fill="url(#hg)"/>
+    <!-- Line -->
+    <polyline points="${pts}" fill="none" stroke="${lineCol}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dot}
+    <!-- Labels -->
+    ${yLabels}
+    ${xLabels}
+  </svg>`;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// RISK PANEL — concentration warnings, shown in Analysis tab
+// ═══════════════════════════════════════════════════════════════
+function buildRiskPanel(){
+  if(S.riskDismissed||!S.holdings.length)return'';
+  const totalVCNY=tots().vC;if(!totalVCNY)return'';
+  const warnings=[];
+
+  // Single holding > 10% / > 15%
+  S.holdings.forEach(h=>{
+    const w=hm(h).valueCNY/totalVCNY*100;
+    if(w>=15) warnings.push({level:'red',icon:'⚠',msg:`${h.name} 占总仓 ${w.toFixed(1)}%，集中度过高`});
+    else if(w>=10) warnings.push({level:'orange',icon:'○',msg:`${h.name} 占总仓 ${w.toFixed(1)}%，注意集中度`});
+  });
+
+  // Single broker > 65%
+  BROKERS.forEach(b=>{
+    const bV=tots(S.holdings.filter(h=>h.brokerId===b.id)).vC;
+    const w=bV/totalVCNY*100;
+    if(w>=65) warnings.push({level:'orange',icon:'○',msg:`${b.name} 占总仓 ${w.toFixed(1)}%，账户集中风险`});
+  });
+
+  // Single asset class > 75%
+  const acGroups=grp(S.holdings,'assetClass');
+  Object.entries(acGroups).forEach(([k,g])=>{
+    const w=g.vC/totalVCNY*100;
+    if(w>=75) warnings.push({level:'orange',icon:'○',msg:`${k} 占总仓 ${w.toFixed(1)}%，资产类别过度集中`});
+  });
+
+  if(!warnings.length)return'';
+
+  return`<div style="background:rgba(255,107,122,.07);border:1px solid rgba(255,107,122,.25);
+    border-radius:16px;padding:14px 16px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--red);font-weight:500;letter-spacing:.5px">⚠ 集中度风险提示</div>
+      <button data-dismiss-risk style="background:transparent;border:none;color:var(--muted);
+        font-size:14px;cursor:pointer;padding:0 4px">×</button>
+    </div>
+    ${warnings.map(w=>`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;
+      font-size:12px;color:${w.level==='red'?'var(--red)':'var(--gold)'}">
+      <span style="flex-shrink:0">${w.icon}</span>
+      <span style="line-height:1.5">${w.msg}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ATTRIBUTION — earnings breakdown by class & strategy
+// ═══════════════════════════════════════════════════════════════
+function buildAttribution(){
+  const totalPnlCNY=tots().pC;
+  if(!totalPnlCNY)return'';
+
+  // By asset class
+  const byClass=grp(S.holdings,'assetClass');
+  const classSorted=Object.entries(byClass).sort((a,b)=>b[1].pC-a[1].pC);
+
+  // By strategy
+  const byStrat=grp(S.holdings,'strategy');
+  const stratSorted=Object.entries(byStrat).sort((a,b)=>b[1].pC-a[1].pC);
+
+  function bar(label,pnlCNY,color,totalAbs){
+    const pct_=totalAbs>0?Math.abs(pnlCNY)/totalAbs*100:0;
+    const isPos=pnlCNY>=0;
+    const contribution=totalPnlCNY!==0?pnlCNY/Math.abs(totalPnlCNY)*100:0;
+    return`<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></div>
+          <span style="font-size:12px">${label}</span>
+        </div>
+        <div style="text-align:right">
+          <span style="font-family:'DM Mono',monospace;font-size:12px;
+            color:${isPos?'var(--green)':'var(--red)'}">${isPos?'+':''}${fmt(fromCNY(pnlCNY))}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-left:6px">
+            贡献 ${contribution>=0?'+':''}${contribution.toFixed(1)}%
+          </span>
+        </div>
+      </div>
+      <div style="height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct_.toFixed(1)}%;background:${color};
+          border-radius:3px;transition:width .5s;opacity:${isPos?1:.6}"></div>
+      </div>
+    </div>`;
+  }
+
+  const totalAbsClass=Math.max(...classSorted.map(([,g])=>Math.abs(g.pC)),1);
+  const totalAbsStrat=Math.max(...stratSorted.map(([,g])=>Math.abs(g.pC)),1);
+
+  return`<div style="background:var(--bg2);border-radius:18px;border:1px solid var(--border);
+    padding:18px;margin-bottom:10px">
+    <div style="font-size:13px;font-weight:500;margin-bottom:4px">收益归因</div>
+    <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:16px">
+      总未实现盈亏：<span style="color:${totalPnlCNY>=0?'var(--green)':'var(--red)'};font-weight:500">
+        ${totalPnlCNY>=0?'+':''}${fmt(fromCNY(totalPnlCNY))}
+      </span>
+    </div>
+    <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;
+      font-family:'DM Mono',monospace;margin-bottom:10px">按资产类别</div>
+    ${classSorted.map(([k,g])=>bar(k,g.pC,AC_COL[k]||'#888',totalAbsClass)).join('')}
+    <div style="height:1px;background:var(--border);margin:14px 0"></div>
+    <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;
+      font-family:'DM Mono',monospace;margin-bottom:10px">按策略</div>
+    ${stratSorted.map(([k,g])=>bar(k,g.pC,ST_COL[k]||'#888',totalAbsStrat)).join('')}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HISTORY TAB
+// ═══════════════════════════════════════════════════════════════
+function filteredSnaps(){
+  const now=new Date();
+  const cutoff={'1M':new Date(now.getFullYear(),now.getMonth()-1,now.getDate()),
+    '3M':new Date(now.getFullYear(),now.getMonth()-3,now.getDate()),
+    '6M':new Date(now.getFullYear(),now.getMonth()-6,now.getDate()),
+    '1Y':new Date(now.getFullYear()-1,now.getMonth(),now.getDate()),
+    'ALL':new Date(0)}[S.histRange]||new Date(0);
+  const cutStr=cutoff.toISOString().slice(0,10);
+  let snaps=S.snapshots.filter(s=>s.date>=cutStr);
+  // Filter by broker
+  if(S.histBroker!=='all'){
+    snaps=snaps.map(s=>({...s,
+      totalValue:s.byBroker[S.histBroker]||0,
+      totalPnl:0,totalCost:0}));
+  }
+  return snaps;
+}
+
+function buildHistChart(snaps){
+  if(snaps.length<2)return'';
+  const W=320,H=160,P={t:12,r:8,b:28,l:56};
+  const IW=W-P.l-P.r,IH=H-P.t-P.b;
+  const metric=S.histMetric;
+  const vals=snaps.map(s=>
+    metric==='value'?fromCNY(s.totalValue):
+    metric==='pnl'?fromCNY(s.totalPnl):
+    s.totalCost>0?s.totalPnl/s.totalCost*100:0);
+  const vMin=Math.min(...vals),vMax=Math.max(...vals),vRange=vMax-vMin||1;
+  const px=i=>P.l+i*(IW/(snaps.length-1));
+  const py=v=>P.t+IH-(v-vMin)/vRange*IH;
+  const pts=vals.map((v,i)=>`${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
+  const fillPts=`${P.l},${P.t+IH} ${pts} ${px(snaps.length-1)},${P.t+IH}`;
+  const isPos=vals[vals.length-1]>=vals[0];
+  const col=isPos?'#4ade90':'#ff6b7a';
+  const yTicks=[vMin,vMin+vRange/2,vMax];
+  const yLbls=yTicks.map(v=>{
+    const lbl=metric==='pnlPct'?v.toFixed(1)+'%':fmt(v);
+    return`<text x="${P.l-4}" y="${(py(v)+4).toFixed(1)}" text-anchor="end"
+      font-size="9" fill="rgba(240,239,245,.35)" font-family="DM Mono,monospace">${lbl}</text>`;
+  }).join('');
+  const xIdxs=[0,Math.floor((snaps.length-1)/2),snaps.length-1];
+  const xLbls=xIdxs.map(i=>`<text x="${px(i).toFixed(1)}" y="${H-5}"
+    text-anchor="middle" font-size="9" fill="rgba(240,239,245,.35)" font-family="DM Mono,monospace">
+    ${snaps[i].date.slice(5)}</text>`).join('');
+  const zeroLine=metric!=='value'&&vMin<0&&vMax>0
+    ?`<line x1="${P.l}" y1="${py(0).toFixed(1)}" x2="${P.l+IW}" y2="${py(0).toFixed(1)}"
+       stroke="rgba(255,255,255,.18)" stroke-width="1" stroke-dasharray="3 3"/>`:'';
+  return`<svg viewBox="0 0 ${W} ${H}" style="width:100%;overflow:visible">
+    <defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${col}" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="${col}" stop-opacity="0.02"/>
+    </linearGradient></defs>
+    ${[0,1,2].map(i=>`<line x1="${P.l}" y1="${(P.t+i*IH/2).toFixed(1)}" x2="${P.l+IW}"
+      y2="${(P.t+i*IH/2).toFixed(1)}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`).join('')}
+    ${zeroLine}
+    <polygon points="${fillPts}" fill="url(#hg)"/>
+    <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2"
+      stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${px(snaps.length-1).toFixed(1)}" cy="${py(vals[vals.length-1]).toFixed(1)}"
+      r="3.5" fill="${col}"/>
+    ${yLbls}${xLbls}
+  </svg>`;
+}
+
+function tHist(){
+  const allSnaps=S.snapshots;
+  const snaps=filteredSnaps();
+  const activeBrokers=BROKERS.filter(b=>allSnaps.some(s=>s.byBroker[b.id]));
+
+  // Summary strip
+  let summaryHtml='';
+  if(snaps.length>=2){
+    const first=snaps[0],last=snaps[snaps.length-1];
+    const vChg=fromCNY(last.totalValue-first.totalValue);
+    const vChgPct=first.totalValue>0?(last.totalValue-first.totalValue)/first.totalValue*100:0;
+    const isPos=vChg>=0;
+    const days=Math.max(1,Math.round((new Date(last.date)-new Date(first.date))/(86400000)));
+    const ann=vChgPct/days*365;
+    const curPnl=fromCNY(last.totalPnl),curPnlPct=last.totalCost>0?last.totalPnl/last.totalCost*100:0;
+    summaryHtml=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      ${[['当前总资产',fmt(fromCNY(last.totalValue)),'var(--text)'],
+         ['区间涨跌',(isPos?'+':'')+fmt(vChg)+' ('+vChgPct.toFixed(1)+'%)',isPos?'var(--green)':'var(--red)'],
+         ['未实现盈亏',(curPnl>=0?'+':'')+fmt(curPnl),curPnl>=0?'var(--green)':'var(--red)'],
+         ['综合收益率',pct(curPnlPct),curPnlPct>=0?'var(--green)':'var(--red)'],
+         ['区间年化',pct(ann),ann>=0?'var(--green)':'var(--red)'],
+         ['数据点',snaps.length+' 个','var(--accent)'],
+        ].map(([l,v,c])=>`<div style="background:var(--bg3);border-radius:10px;padding:10px;border:1px solid var(--border)">
+          <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;
+            font-family:'DM Mono',monospace;margin-bottom:4px">${l}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:${c}">${v}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // Broker filter tabs
+  const brokerTabs=activeBrokers.length>0?`
+    <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none">
+      <button data-hb="all" style="flex-shrink:0;padding:5px 12px;border-radius:8px;
+        border:1px solid ${S.histBroker==='all'?'var(--accent2)':'var(--border)'};
+        background:${S.histBroker==='all'?'var(--accent2)':'transparent'};
+        color:${S.histBroker==='all'?'white':'var(--muted)'};
+        font-size:11px;font-family:'DM Mono',monospace;cursor:pointer">全部</button>
+      ${activeBrokers.map(b=>`<button data-hb="${b.id}" style="flex-shrink:0;padding:5px 12px;
+        border-radius:8px;border:1px solid ${S.histBroker===b.id?b.color:'var(--border)'};
+        background:${S.histBroker===b.id?b.color+'22':'transparent'};
+        color:${S.histBroker===b.id?b.color:'var(--muted)'};
+        font-size:11px;cursor:pointer">${b.icon}${b.name}</button>`).join('')}
+    </div>`:'';
+
+  // Metric + range toggles
+  const metricToggle=`<div style="display:flex;background:var(--bg3);border-radius:10px;padding:2px;
+    margin-bottom:10px;border:1px solid var(--border)">
+    ${[['value','总资产'],['pnl','盈亏'],['pnlPct','收益率']].map(([k,l])=>
+      `<button data-hm="${k}" style="flex:1;padding:7px 2px;border-radius:8px;border:none;
+        background:${S.histMetric===k?'var(--bg4)':'transparent'};
+        color:${S.histMetric===k?'var(--text)':'var(--muted)'};font-size:11px;cursor:pointer;
+        ${S.histMetric===k?'box-shadow:0 1px 4px rgba(0,0,0,.4)':''}
+        font-family:'Noto Sans SC',sans-serif;transition:all .2s">${l}</button>`
+    ).join('')}
+  </div>`;
+
+  const rangeToggle=`<div style="display:flex;gap:6px;margin-bottom:14px">
+    ${['1M','3M','6M','1Y','ALL'].map(r=>
+      `<button data-hr="${r}" style="flex:1;padding:5px 0;border-radius:8px;
+        border:1px solid ${S.histRange===r?'var(--accent2)':'var(--border)'};
+        background:${S.histRange===r?'var(--accent2)':'transparent'};
+        color:${S.histRange===r?'white':'var(--muted)'};font-size:11px;
+        font-family:'DM Mono',monospace;cursor:pointer;transition:all .2s">${r}</button>`
+    ).join('')}
+  </div>`;
+
+  const chartHtml=snaps.length>=2
+    ?`<div style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);
+        padding:16px;margin-bottom:14px">
+        ${metricToggle}${buildHistChart(snaps)}
+      </div>`
+    :`<div style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);
+        padding:36px 20px;text-align:center;margin-bottom:14px">
+        <div style="font-size:32px;margin-bottom:10px">📈</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8">
+          还没有足够历史数据<br>每次打开 App 会自动记录一个数据点<br>
+          或点击「导入历史持仓」批量回填
+        </div>
+      </div>`;
+
+  // Recent snapshots list
+  const recentSnaps=[...allSnaps].reverse().slice(0,8);
+  const snapList=recentSnaps.length?`
+    <div style="font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;
+      font-family:'DM Mono',monospace;padding:0 0 8px">近期记录</div>
+    <div style="background:var(--bg2);border-radius:16px;border:1px solid var(--border);
+      padding:4px 0;margin-bottom:14px">
+      ${recentSnaps.map((s,i)=>{
+        const isPos=s.totalPnl>=0;
+        const pnlPct=s.totalCost>0?s.totalPnl/s.totalCost*100:0;
+        const brokerTags=Object.entries(s.byBroker||{}).map(([bid,v])=>{
+          const b=broker(bid);
+          return`<span style="font-size:9px;color:${b.color};font-family:'DM Mono',monospace">${b.icon}${fmt(fromCNY(v))}</span>`;
+        }).join('<span style="color:var(--muted2);margin:0 3px">·</span>');
+        return`<div style="display:flex;align-items:flex-start;padding:10px 16px;
+          border-bottom:${i<recentSnaps.length-1?'1px solid var(--border)':'none'}">
+          <div style="flex:1">
+            <div style="font-size:12px;font-family:'DM Mono',monospace">${s.date}</div>
+            <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">${brokerTags}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-family:'DM Mono',monospace;font-size:13px">${fmt(fromCNY(s.totalValue))}</div>
+            <div style="font-size:10px;font-family:'DM Mono',monospace;
+              color:${isPos?'var(--green)':'var(--red)'};margin-top:2px">
+              ${isPos?'+':''}${pct(pnlPct)}
+            </div>
+          </div>
+          <button data-del-snap="${s.date}" style="margin-left:10px;width:24px;height:24px;
+            border-radius:50%;border:1px solid var(--border);background:var(--bg3);
+            color:var(--muted);font-size:11px;cursor:pointer;flex-shrink:0;
+            display:flex;align-items:center;justify-content:center">×</button>
+        </div>`;
+      }).join('')}
+    </div>`:'';
+
+  // Attribution panel
+  const attrHtml=buildAttribution();
+
+  // Import modal
+  const importModal=S.histImportModal?`
+    <div style="position:fixed;inset:0;z-index:500;display:flex;align-items:flex-end">
+      <div id="hist-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(10px)"></div>
+      <div style="position:relative;width:100%;background:var(--bg2);border-radius:24px 24px 0 0;
+        border:1px solid var(--border2);border-bottom:none;padding:0 0 calc(env(safe-area-inset-bottom,20px)+20px);
+        max-height:85dvh;overflow-y:auto;animation:slideUp .28s cubic-bezier(.32,.72,0,1)">
+        <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 18px"></div>
+        <div style="padding:0 22px 14px;display:flex;justify-content:space-between;align-items:center;
+          border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-family:'DM Serif Display',serif;font-size:20px">导入历史持仓</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;font-family:'DM Mono',monospace">
+              上传一个或多个账户的持仓 CSV，按日期合并
+            </div>
+          </div>
+          <button id="hist-modal-close" style="width:32px;height:32px;border-radius:50%;
+            border:1px solid var(--border2);background:var(--bg3);color:var(--muted);
+            font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
+        <div style="padding:18px 22px">
+          <!-- Date picker -->
+          <div style="margin-bottom:14px">
+            <label style="font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;
+              font-family:'DM Mono',monospace;display:block;margin-bottom:6px">持仓截止日期</label>
+            <input type="date" id="hist-date-input" value="${S.histImportDate}"
+              style="width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border2);
+              background:var(--bg3);color:var(--text);font-size:14px;font-family:'DM Mono',monospace;
+              outline:none;-webkit-appearance:none">
+          </div>
+          <!-- File upload -->
+          <div style="margin-bottom:14px">
+            <label style="font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;
+              font-family:'DM Mono',monospace;display:block;margin-bottom:6px">选择持仓 CSV（可多选）</label>
+            <div id="hist-dz" style="border:2px dashed var(--border2);border-radius:12px;padding:20px;
+              text-align:center;cursor:pointer;transition:all .2s">
+              <div style="font-size:24px;margin-bottom:6px">📂</div>
+              <div style="font-size:12px;color:var(--muted)">点击选择文件（支持同时选多个）</div>
+              <div style="font-size:10px;color:var(--muted2);margin-top:4px">老虎证券 / 平安证券 导出格式</div>
+              <input type="file" id="hist-csv-input" accept=".csv" multiple style="display:none">
+            </div>
+          </div>
+          <!-- Parsed preview -->
+          ${S.histImportFiles.length?`
+            <div style="margin-bottom:14px">
+              <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;
+                font-family:'DM Mono',monospace;margin-bottom:8px">解析结果 · ${S.histImportDate}</div>
+              ${S.histImportFiles.map(f=>{
+                const b=broker(f.brokerId);
+                const total=f.holdings.reduce((s,h)=>s+h.valueCNY,0);
+                return`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+                  background:var(--bg3);border-radius:10px;margin-bottom:6px">
+                  <span style="font-size:16px">${b.icon}</span>
+                  <div style="flex:1">
+                    <div style="font-size:12px;font-weight:500">${b.name}</div>
+                    <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px">
+                      ${f.holdings.length} 条 · ${f.name}
+                    </div>
+                  </div>
+                  <div style="font-family:'DM Mono',monospace;font-size:13px">${fmt(fromCNY(total))}</div>
+                </div>`;
+              }).join('')}
+              <div style="padding:10px 12px;background:rgba(124,106,255,.08);border-radius:10px;
+                border:1px solid rgba(124,106,255,.2);display:flex;justify-content:space-between">
+                <span style="font-size:12px;color:var(--accent)">合计</span>
+                <span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--accent)">
+                  ${fmt(fromCNY(S.histImportFiles.reduce((s,f)=>s+f.holdings.reduce((a,h)=>a+h.valueCNY,0),0)))}
+                </span>
+              </div>
+            </div>
+            <button id="hist-do-import" style="width:100%;padding:14px;border-radius:14px;border:none;
+              background:linear-gradient(135deg,var(--accent2),#9b8eff);color:#fff;font-size:14px;
+              font-weight:500;cursor:pointer;font-family:'Noto Sans SC',sans-serif">
+              保存为 ${S.histImportDate} 快照
+            </button>
+          `:''}
+        </div>
+      </div>
+    </div>`:'';
+
+  return`<div style="padding:0 20px;animation:fadeUp .4s ease both">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0 14px">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;
+        color:var(--muted);font-family:'DM Mono',monospace">
+        资产历史 · ${allSnaps.length} 个数据点
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="xsnap" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border2);
+          background:var(--bg3);color:var(--muted);font-size:11px;cursor:pointer;
+          font-family:'Noto Sans SC',sans-serif">今日快照</button>
+        <button id="hist-open-import" style="padding:6px 12px;border-radius:8px;
+          border:1px solid var(--accent2);background:rgba(124,106,255,.12);
+          color:var(--accent);font-size:11px;cursor:pointer;font-family:'Noto Sans SC',sans-serif">
+          ↑ 导入历史
+        </button>
+      </div>
+    </div>
+    ${attrHtml}
+    ${brokerTabs}
+    ${rangeToggle}
+    ${summaryHtml}
+    ${chartHtml}
+    ${snapList}
+    <button id="xsnap-export" style="width:100%;padding:12px;border-radius:12px;
+      border:1px solid var(--border2);background:var(--bg3);color:var(--text);
+      font-size:13px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;margin-bottom:20px">
+      ↓ 导出历史数据 JSON
+    </button>
+  </div>
+  ${importModal}`;
+}
+
+
+function tSet(){
+  const r=S.rates;const today=new Date().toDateString();const rFresh=r.ratesDate===today;
+  return`<div class="stsec">
+    <div class="sec" style="padding:4px 0 12px">汇率（基准：人民币）</div>
+    <div class="stcard">
+      ${[['USD','美元',r.USD],['HKD','港元',r.HKD],['USDT','泰达币',r.USDT]].map(([c,n,v])=>
+        `<div class="strow"><span>${n} (${c})</span><span style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace">1${c}=¥${v.toFixed(4)}${rFresh?' ✓今日':''}</span></div>`
+      ).join('')}
+    </div>
+    <button class="btn-s" id="xrr">↻ 更新汇率（每日自动）</button>
+
+    <div class="sec" style="padding:16px 0 12px">实时股价</div>
+    <div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px 16px;font-size:12px;color:var(--muted);line-height:1.9;margin-bottom:12px">
+      股价通过 Claude AI + 网页搜索获取，每 <strong style="color:var(--text)">5 分钟</strong>自动刷新一次。
+      点击右上角 ⟳ 可手动立即刷新。<br>
+      上次更新：<strong style="color:var(--text)">${S.lastPriceUpdate?new Date(S.lastPriceUpdate).toLocaleTimeString('zh'):'从未'}</strong>
+    </div>
+    <button class="btn-s" id="xpnow">⟳ 立即刷新股价</button>
+
+    <div class="sec" style="padding:16px 0 12px">数据管理</div>
+    <div class="stcard">
+      <div class="strow" id="xexp"><span>导出 JSON 备份</span><span>›</span></div>
+      <div class="strow" id="xreset"><span>重置为内置持仓（老虎+平安）</span><span>›</span></div>
+      <div class="strow" id="xclr"><span style="color:var(--red)">清除所有数据</span><span>›</span></div>
+    </div>
+
+    <div class="sec" style="padding:16px 0 12px">CSV 格式（兼容老虎导出）</div>
+    <div style="background:var(--bg2);border-radius:14px;border:1px solid var(--border);padding:14px">
+      <div style="font-size:10px;color:var(--muted);line-height:2.2;font-family:'DM Mono',monospace">
+        账户,代码,数量,成本价格,收盘价格,币种,资产类别,策略<br>
+        老虎证券,AAPL (AAPL),20,265.72,298.21,USD,美港股,配置
+      </div>
+    </div>
+    <div style="text-align:center;padding:28px 0 0;color:var(--muted2);font-size:10px;font-family:'DM Mono',monospace">仓位 v3.0 · 本地存储 · 实时价格</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════════════════
+function modalHtml(){
+  if(S.modal==='add'||S.modal==='edit')return mAdd();
+  if(S.modal==='cash')return mCash();
+  if(S.modal==='csv')return mCSV();
+  if(S.modal==='detail')return mDetail();
+  return'';
+}
+
+function mAdd(){
+  const isEdit=S.modal==='edit';const f=S.form;
+  return`<div class="movl" id="mo"><div class="modal">
+    <div class="mhdl"></div>
+    <div class="mhdr"><div><div class="mtitle">${isEdit?'编辑持仓':'添加标的'}</div></div><button class="mclose" id="mc">✕</button></div>
+    <div class="mbody">
+      <div class="fg"><label class="fl">券商账户</label>
+        <select class="fsel" id="fb">${BROKERS.map(b=>`<option value="${b.id}"${f.brokerId===b.id?' selected':''}>${b.icon} ${b.name}</option>`).join('')}</select></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">代码</label><input class="fi" id="ft" placeholder="AAPL / 01810" value="${f.ticker||''}"></div>
+        <div class="fg"><label class="fl">名称</label><input class="fi" id="fn" placeholder="苹果" value="${f.name||''}"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">数量</label><input class="fi" id="fq" type="number" value="${f.qty||''}"></div>
+        <div class="fg"><label class="fl">币种</label>
+          <select class="fsel" id="fcur">${CCYS.map(c=>`<option value="${c}"${f.currency===c?' selected':''}>${c}</option>`).join('')}</select></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">成本价</label><input class="fi" id="fco" type="number" step="0.0001" value="${f.avgCost||''}"></div>
+        <div class="fg"><label class="fl">现价</label><input class="fi" id="fp" type="number" step="0.0001" value="${f.currentPrice||''}"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">资产类别</label>
+          <select class="fsel" id="fa">${ASSETS.map(a=>`<option value="${a}"${f.assetClass===a?' selected':''}>${a}</option>`).join('')}</select></div>
+        <div class="fg"><label class="fl">策略</label>
+          <select class="fsel" id="fs">${STRATS.map(s=>`<option value="${s}"${f.strategy===s?' selected':''}>${s}</option>`).join('')}</select></div>
+      </div>
+      <div class="dvdr"></div>
+      <button class="btn-p" id="msave">${isEdit?'保存修改':'添加持仓'}</button>
+      ${isEdit?`<button class="btn-d" id="mdel">🗑 删除这条持仓</button>`:''}
+    </div>
+  </div></div>`;
+}
+
+function mCash(){
+  const f=S.form;
+  return`<div class="movl" id="mo"><div class="modal">
+    <div class="mhdl"></div>
+    <div class="mhdr">
+      <div><div class="mtitle">添加现金</div><div class="msub">账户内未投资的资金</div></div>
+      <button class="mclose" id="mc">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="fg"><label class="fl">账户</label>
+        <select class="fsel" id="cb">${BROKERS.map(b=>`<option value="${b.id}"${f.brokerId===b.id?' selected':''}>${b.icon} ${b.name}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">备注名称</label>
+        <input class="fi" id="cn" placeholder="老虎 USD 现金" value="${f.name||''}"></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">金额</label>
+          <input class="fi" id="ca" type="number" step="0.01" placeholder="10000" value="${f.cashAmount||''}"></div>
+        <div class="fg"><label class="fl">币种</label>
+          <select class="fsel" id="ccur">${CCYS.map(c=>`<option value="${c}"${f.currency===c?' selected':''}>${c}</option>`).join('')}</select></div>
+      </div>
+      <div style="background:rgba(74,222,144,.07);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px">
+        💡 现金不参与收益率计算，仅作为资产总量的一部分。
+      </div>
+      <div class="dvdr"></div>
+      <button class="btn-p" id="csave">添加现金</button>
+    </div>
+  </div></div>`;
+}
+
+function mCSV(){
+  return`<div class="movl" id="mo"><div class="modal">
+    <div class="mhdl"></div>
+    <div class="mhdr"><div><div class="mtitle">导入 CSV</div><div class="msub">兼容老虎证券导出格式</div></div><button class="mclose" id="mc">✕</button></div>
+    <div class="mbody">
+      <div class="dz" id="dz"><div style="font-size:28px;margin-bottom:7px">📂</div>
+        <div style="font-size:13px;color:var(--muted)">点击选择 CSV 文件</div>
+        <div style="font-size:11px;color:var(--muted2);margin-top:3px">拖放亦可</div>
+        <input type="file" id="cfi" accept=".csv,text/csv" style="display:none">
+      </div>
+      ${S.csvRaw?`<div class="csv-pre">${S.csvRaw.slice(0,350)}${S.csvRaw.length>350?'\n...':''}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">解析到 <strong style="color:var(--text)">${S.csvParsed.length}</strong> 条有效记录</div>`:''}
+      ${S.csvParsed.length>0?`<button class="btn-p" id="mimport">导入 ${S.csvParsed.length} 条记录</button>`:''}
+    </div>
+  </div></div>`;
+}
+
+function mDetail(){
+  const h=S.holdings.find(x=>x.id===S.selId);if(!h)return'';
+  const m=hm(h);const b=broker(h.brokerId);
+  const isPos=m.pnl>=0||h.avgCost===0||h.isCash;
+  const ac=AC_COL[h.assetClass]||'#888';const sc=ST_COL[h.strategy]||'#888';
+  const s=fsym(h.currency);
+  const totalVCNY=tots().vC;const gw=totalVCNY>0?m.valueCNY/totalVCNY*100:0;
+  const freshPrice=h.priceUpdatedAt&&(Date.now()-h.priceUpdatedAt)<10*60*1000;
+  return`<div class="movl" id="mo"><div class="modal">
+    <div class="mhdl"></div>
+    <div class="mhdr">
+      <div><div class="mtitle">${h.name}</div><div class="msub">${b.icon}${b.name} · ${h.isCash?h.currency:h.ticker+' · '+h.currency}</div></div>
+      <button class="mclose" id="mc">✕</button>
+    </div>
+    <div class="mbody">
+      <div style="text-align:center;padding:12px 0 16px">
+        <div style="font-family:'DM Serif Display',serif;font-size:34px;margin-bottom:8px">${fmt(fromCNY(m.valueCNY))}</div>
+        ${h.isCash?`<div class="cash-badge" style="font-size:12px;padding:4px 14px">💰 现金资产</div>`:
+        `<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:20px;background:${isPos?'rgba(74,222,144,.1)':'rgba(255,107,122,.1)'}">
+          <span style="color:${isPos?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace;font-size:13px">
+            ${isPos?'▲':'▼'} ${h.avgCost===0?'成本为零':fmt(Math.abs(fromCNY(m.pnlCNY)))+' ('+pct(m.pnlPct)+')'}
+          </span>
+        </div>`}
+      </div>
+      <div class="dtags">
+        ${h.assetClass?`<span class="dtag" style="color:${ac};border-color:${ac}40">${h.assetClass}</span>`:''}
+        ${h.strategy&&!h.isCash?`<span class="dtag" style="color:${sc};border-color:${sc}40">${h.strategy}</span>`:''}
+        <span class="dtag" style="color:var(--gold);border-color:rgba(245,200,66,.3)">总仓 ${wPct(gw)}</span>
+        ${freshPrice?`<span class="dtag" style="color:var(--green);border-color:rgba(74,222,144,.3)">● 实时价格</span>`:''}
+      </div>
+      ${h.isCash?`
+        <div class="dsgrid">
+          <div class="dst"><div class="dstl">金额</div><div class="dstv">${s}${(h.cashAmount||0).toLocaleString()}</div></div>
+          <div class="dst"><div class="dstl">换算</div><div class="dstv">${fmt(fromCNY(m.valueCNY))}</div></div>
+          <div class="dst"><div class="dstl">占总仓</div><div class="dstv">${wPct(gw)}</div></div>
+          <div class="dst"><div class="dstl">账户</div><div class="dstv" style="font-size:12px">${b.name}</div></div>
+        </div>
+      `:`
+        <div class="dsgrid">
+          <div class="dst"><div class="dstl">持仓数量</div><div class="dstv">${h.qty.toLocaleString()}</div></div>
+          <div class="dst"><div class="dstl">当前价格</div><div class="dstv">${s}${h.currentPrice.toLocaleString()}</div></div>
+          <div class="dst"><div class="dstl">平均成本</div><div class="dstv">${h.avgCost===0?'—':s+h.avgCost.toFixed(4)}</div></div>
+          <div class="dst"><div class="dstl">总成本(原币)</div><div class="dstv">${h.avgCost===0?'—':s+(h.qty*h.avgCost).toLocaleString('zh',{maximumFractionDigits:2})}</div></div>
+          <div class="dst"><div class="dstl">市值(${S.ccy})</div><div class="dstv">${fmt(fromCNY(m.valueCNY))}</div></div>
+          <div class="dst"><div class="dstl">占总仓</div><div class="dstv" style="color:var(--gold)">${wPct(gw)}</div></div>
+        </div>
+      `}
+      <button class="btn-s" id="dedit">${h.isCash?'✏ 编辑现金':'✏ 编辑持仓'}</button>
+      ${!h.isCash?`<button class="btn-s" id="dprice">↻ 手动更新现价</button>`:''}
+      <button class="btn-d" id="ddel">🗑 删除</button>
+    </div>
+  </div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════════════
+function ev(){
+  const $=id=>document.getElementById(id);
+  const on=(id,fn)=>{const el=$(id);if(el)el.addEventListener('click',fn)};
+  // tabs / nav
+  document.querySelectorAll('[data-tab]').forEach(el=>el.addEventListener('click',()=>{S.tab=el.dataset.tab;render()}));
+  document.querySelectorAll('[data-ccy]').forEach(el=>el.addEventListener('click',()=>{S.ccy=el.dataset.ccy;render()}));
+  document.querySelectorAll('[data-pv]').forEach(el=>el.addEventListener('click',()=>{S.pivot=el.dataset.pv;S.selAsset=null;render()}));
+  document.querySelectorAll('[data-fb]').forEach(el=>el.addEventListener('click',()=>{S.fb=el.dataset.fb;render()}));
+  document.querySelectorAll('[data-fa]').forEach(el=>el.addEventListener('click',()=>{S.fa=el.dataset.fa;render()}));
+  document.querySelectorAll('[data-fs]').forEach(el=>el.addEventListener('click',()=>{S.fs=el.dataset.fs;render()}));
+  document.querySelectorAll('[data-hid]').forEach(el=>el.addEventListener('click',()=>{S.selId=el.dataset.hid;S.modal='detail';render()}));
+  // Donut / legend clicks → select asset class
+  document.querySelectorAll('[data-ac]').forEach(el=>el.addEventListener('click',()=>{
+    const k=el.dataset.ac;
+    S.selAsset=S.selAsset===k?null:k;
+    render();
+    if(S.selAsset){
+      // scroll detail panel into view smoothly
+      setTimeout(()=>{
+        const det=document.querySelector('[data-detail-panel]');
+        if(det)det.scrollIntoView({behavior:'smooth',block:'start'});
+      },80);
+    }
+  }));
+  // Clear asset selection
+  document.querySelectorAll('[data-ac-clear]').forEach(el=>el.addEventListener('click',e=>{
+    e.stopPropagation();S.selAsset=null;render();
+  }));
+  // Strategy drawer: click on bar segment or detail row
+  document.querySelectorAll('[data-sd-broker][data-sd-strat]').forEach(el=>el.addEventListener('click',e=>{
+    e.stopPropagation();
+    const{sdBroker:brokerId,sdStrat:strategy}=el.dataset;
+    if(S.stratDrawer?.brokerId===brokerId&&S.stratDrawer?.strategy===strategy){
+      S.stratDrawer=null; // toggle off
+    }else{
+      S.stratDrawer={brokerId,strategy};
+    }
+    render();
+  }));
+  // Drawer close
+  on('drawer-close',()=>{S.stratDrawer=null;render()});
+  const dov=$('drawer-overlay');if(dov)dov.addEventListener('click',()=>{S.stratDrawer=null;render()});
+  // header
+  on('xp',fetchPrices);on('xcsv',openCSV);on('xadd',openAdd);
+  on('xadd2',openAdd);on('xcash',openCash);
+  // modal close
+  on('mc',closeM);const mo=$('mo');if(mo)mo.addEventListener('click',e=>{if(e.target===mo)closeM()});
+  // add/edit
+  on('msave',saveHolding);on('mdel',()=>delH(S.selId));
+  // cash modal
+  on('csave',saveCash);
+  // detail
+  on('dedit',()=>{
+    const h=S.holdings.find(x=>x.id===S.selId);if(!h)return;
+    if(h.isCash){S.form={...h};S.modal='cash';render()}
+    else{S.form={...h};S.modal='edit';render()}
+  });
+  on('dprice',()=>{
+    const h=S.holdings.find(x=>x.id===S.selId);if(!h)return;
+    const v=prompt(`更新 ${h.name} 现价（${h.currency}）：`,h.currentPrice);
+    if(v!==null&&!isNaN(parseFloat(v))){h.currentPrice=parseFloat(v);h.priceUpdatedAt=Date.now();DB.sh(S.holdings);toast('✓ 价格已更新');render()}
+  });
+  on('ddel',()=>delH(S.selId));
+  // csv
+  const dz=$('dz'),cfi=$('cfi');
+  if(dz){dz.addEventListener('click',()=>cfi&&cfi.click());dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')});dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');if(e.dataTransfer.files[0])rdCSV(e.dataTransfer.files[0])})}
+  if(cfi)cfi.addEventListener('change',e=>{if(e.target.files[0])rdCSV(e.target.files[0])});
+  on('mimport',importCSV);
+  // settings
+  on('xrr',fetchRates);on('xpnow',fetchPrices);
+  on('xexp',exportData);
+  on('xreset',()=>{if(confirm('重置为内置持仓（老虎5.14+平安）？当前数据将被覆盖。')){S.holdings=seed();DB.sh(S.holdings);toast('✓ 已重置');render()}});
+  on('xclr',()=>{if(confirm('确定清除所有数据？')){S.holdings=[];DB.sh([]);toast('✓ 已清除');render()}});
+  // history tab
+  on('xsnap',()=>{
+    const s=saveSnapshot(new Date().toISOString().slice(0,10));
+    toast(`✓ 已记录 ${s.date} 快照`);render();
+  });
+  on('xsnap-export',()=>{
+    const blob=new Blob([JSON.stringify({snapshots:S.snapshots,exported:new Date().toISOString()},null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=`history_${new Date().toISOString().slice(0,10)}.json`;a.click();
+    toast('✓ 历史数据已导出');
+  });
+  document.querySelectorAll('[data-hr]').forEach(el=>el.addEventListener('click',()=>{S.histRange=el.dataset.hr;render()}));
+  document.querySelectorAll('[data-hm]').forEach(el=>el.addEventListener('click',()=>{S.histMetric=el.dataset.hm;render()}));
+  document.querySelectorAll('[data-hb]').forEach(el=>el.addEventListener('click',()=>{S.histBroker=el.dataset.hb;render()}));
+  document.querySelectorAll('[data-del-snap]').forEach(el=>el.addEventListener('click',e=>{
+    e.stopPropagation();
+    const d=el.dataset.delSnap;
+    if(!confirm(`删除 ${d} 的快照？`))return;
+    S.snapshots=S.snapshots.filter(s=>s.date!==d);
+    DB.ssnap(S.snapshots);toast('✓ 已删除');render();
+  }));
+  document.querySelectorAll('[data-dismiss-risk]').forEach(el=>el.addEventListener('click',()=>{S.riskDismissed=true;render()}));
+  // History import modal
+  on('hist-open-import',()=>{S.histImportModal=true;S.histImportFiles=[];render()});
+  on('hist-modal-close',()=>{S.histImportModal=false;S.histImportFiles=[];render()});
+  on('hist-overlay',()=>{S.histImportModal=false;S.histImportFiles=[];render()});
+  // Date input inside modal
+  const hdi=document.getElementById('hist-date-input');
+  if(hdi)hdi.addEventListener('change',e=>{S.histImportDate=e.target.value});
+  // Multi-file CSV upload
+  const hdz=document.getElementById('hist-dz');
+  const hci=document.getElementById('hist-csv-input');
+  if(hdz)hdz.addEventListener('click',()=>hci&&hci.click());
+  if(hci)hci.addEventListener('change',e=>{
+    const files=Array.from(e.target.files||[]);
+    if(!files.length)return;
+    S.histImportFiles=[];
+    let loaded=0;
+    files.forEach(file=>{
+      const r=new FileReader();
+      r.onload=ev=>{
+        const{brokerId,holdings}=parseBrokerCSV(ev.target.result);
+        S.histImportFiles.push({name:file.name,brokerId,holdings});
+        loaded++;
+        if(loaded===files.length)render();
+      };
+      r.readAsText(file,'UTF-8');
+    });
+  });
+  // Commit import
+  on('hist-do-import',()=>{
+    if(!S.histImportFiles.length)return;
+    const date=S.histImportDate||new Date().toISOString().slice(0,10);
+    const snap=buildSnapshotFromFiles(date,S.histImportFiles);
+    mergeSnapshot(snap);
+    toast(`✓ 已保存 ${date} 快照（${S.histImportFiles.length} 个账户）`);
+    S.histImportModal=false;S.histImportFiles=[];render();
+  });
+}
+
+function openAdd(){S.form={brokerId:'tiger',currency:'HKD',assetClass:'美港股',strategy:'配置'};S.selId=null;S.modal='add';render()}
+function openCash(){S.form={brokerId:'tiger',currency:'HKD'};S.modal='cash';render()}
+function openCSV(){S.modal='csv';S.csvRaw='';S.csvParsed=[];render()}
+function closeM(){S.modal=null;S.selId=null;S.csvRaw='';S.csvParsed=[];render()}
+
+function saveHolding(){
+  const g=id=>document.getElementById(id)?.value;
+  const ticker=(g('ft')||'').trim(),qty=parseFloat(g('fq')),price=parseFloat(g('fp'));
+  if(!ticker||isNaN(qty)||isNaN(price)){toast('⚠ 代码、数量、现价必填');return}
+  const cost=parseFloat(g('fco'));
+  const obj={brokerId:g('fb'),ticker,name:(g('fn')||'').trim()||ticker,qty,avgCost:isNaN(cost)?0:cost,currentPrice:price,currency:g('fcur')||'HKD',assetClass:g('fa')||'美港股',strategy:g('fs')||'配置',sector:g('fa')||'美港股',isCash:false};
+  if(S.modal==='edit'&&S.selId){
+    const i=S.holdings.findIndex(h=>h.id===S.selId);
+    if(i>=0)S.holdings[i]={...S.holdings[i],...obj};
+    toast('✓ 已更新');
+  }else{S.holdings.push({id:uid(),...obj,priceUpdatedAt:null});toast('✓ 已添加')}
+  DB.sh(S.holdings);closeM();
+}
+
+function saveCash(){
+  const g=id=>document.getElementById(id)?.value;
+  const amt=parseFloat(g('ca'));const name=(g('cn')||'').trim();
+  if(isNaN(amt)||amt<=0){toast('⚠ 请输入有效金额');return}
+  const obj={
+    id:S.form.id||uid(),brokerId:g('cb')||'tiger',
+    ticker:'CASH',name:name||'现金',
+    qty:1,avgCost:amt,currentPrice:amt,
+    currency:g('ccur')||'HKD',
+    assetClass:'现金',strategy:'现金',sector:'现金',
+    isCash:true,cashAmount:amt,priceUpdatedAt:null,
+  };
+  if(S.form.id){
+    const i=S.holdings.findIndex(h=>h.id===S.form.id);
+    if(i>=0){S.holdings[i]={...S.holdings[i],...obj};toast('✓ 已更新')}
+  }else{S.holdings.push(obj);toast('✓ 现金已添加')}
+  DB.sh(S.holdings);closeM();
+}
+
+function delH(id){
+  if(!id)return;if(!confirm('确定删除？'))return;
+  S.holdings=S.holdings.filter(h=>h.id!==id);DB.sh(S.holdings);toast('✓ 已删除');closeM();
+}
+function rdCSV(file){const r=new FileReader();r.onload=e=>{S.csvRaw=e.target.result;S.csvParsed=parseCSV(S.csvRaw);render()};r.readAsText(file,'UTF-8')}
+function importCSV(){if(!S.csvParsed.length)return;S.holdings=[...S.holdings,...S.csvParsed];DB.sh(S.holdings);toast(`✓ 导入了 ${S.csvParsed.length} 条`);closeM()}
+function exportData(){
+  const b=new Blob([JSON.stringify({holdings:S.holdings,rates:S.rates,exported:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`portfolio_${new Date().toISOString().slice(0,10)}.json`;a.click();toast('✓ 已导出');
+}
+
+render();
+
+// Fetch prices on first load
+setTimeout(fetchPrices, 1500);
+</script>
+</body>
+</html>
