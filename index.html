@@ -304,20 +304,19 @@ const SEED_PINGAN=[
   {ticker:'159268',name:'港股通消费50ETF',qty:2000.0,avgCost:1.027,currentPrice:1.027,currency:'CNY',assetClass:'美港股',strategy:'波段',brokerId:'pingan'},
   {ticker:'159265',name:'港股消费50ETF',qty:10000.0,avgCost:1.051,currentPrice:1.051,currency:'CNY',assetClass:'美港股',strategy:'波段',brokerId:'pingan'},
   {ticker:'601899',name:'紫金矿业',qty:300.0,avgCost:31.08,currentPrice:31.08,currency:'CNY',assetClass:'A股',strategy:'波段',brokerId:'pingan'},
-  {ticker:'518850',name:'黄金ETF华夏',qty:21600.0,avgCost:10.032431,currentPrice:10.032431,currency:'CNY',assetClass:'黄金',strategy:'防守',brokerId:'pingan'},
+  {ticker:'518850',name:'黄金ETF华夏',qty:23600.0,avgCost:9.981378,currentPrice:9.981378,currency:'CNY',assetClass:'黄金',strategy:'防守',brokerId:'pingan'},
   {ticker:'513050',name:'中概互联网ETF',qty:120000.0,avgCost:1.313394,currentPrice:1.313394,currency:'CNY',assetClass:'美港股',strategy:'配置',brokerId:'pingan'},
-  {ticker:'159501',name:'纳指ETF嘉实',qty:50000.0,avgCost:1.776,currentPrice:1.776,currency:'CNY',assetClass:'美港股',strategy:'配置',brokerId:'pingan'},
   {ticker:'00700',name:'腾讯控股',qty:700.0,avgCost:568.9375,currentPrice:568.9375,currency:'CNY',assetClass:'美港股',strategy:'配置',brokerId:'pingan'},
   {ticker:'016702',name:'银华海外数字经济量化选股混合发起式(QDII)C',qty:5611.98,avgCost:1.781902,currentPrice:1.781902,currency:'CNY',assetClass:'基金',strategy:'配置',brokerId:'pingan'},
   {ticker:'00981',name:'中芯国际',qty:500.0,avgCost:69.566667,currentPrice:69.566667,currency:'CNY',assetClass:'美港股',strategy:'投机',brokerId:'pingan'},
   {ticker:'021842',name:'国富全球科技互联混合(QDII)人民币C',qty:39693.26,avgCost:5.038639,currentPrice:5.038639,currency:'CNY',assetClass:'基金',strategy:'配置',brokerId:'pingan'},
   {ticker:'09992',name:'泡泡玛特',qty:1400.0,avgCost:205.44898,currentPrice:205.44898,currency:'CNY',assetClass:'美港股',strategy:'波段',brokerId:'pingan'},
   {ticker:'008254',name:'华宝致远混合C',qty:6293.57,avgCost:1.430031,currentPrice:1.430031,currency:'CNY',assetClass:'基金',strategy:'配置',brokerId:'pingan'},
-  {ticker:'008253',name:'华宝致远混合A',qty:4039.43,avgCost:1.485358,currentPrice:1.485358,currency:'CNY',assetClass:'基金',strategy:'配置',brokerId:'pingan'},
-  {ticker:'159967',name:'创业板成长ETF华夏',qty:26000.0,avgCost:0.764,currentPrice:0.764,currency:'CNY',assetClass:'A股',strategy:'波段',brokerId:'pingan'},
-  {ticker:'159201',name:'自由现金流ETF华夏',qty:30000.0,avgCost:1.301,currentPrice:1.301,currency:'CNY',assetClass:'A股',strategy:'配置',brokerId:'pingan'}
+  {ticker:'008253',name:'华宝致远混合A',qty:4039.43,avgCost:1.485358,currentPrice:1.485358,currency:'CNY',assetClass:'基金',strategy:'配置',brokerId:'pingan'}
 
 ,
+  {ticker:'160644',name:'港美互联网LOF',qty:37400.0,avgCost:2.0165,currentPrice:2.0165,currency:'CNY',assetClass:'美港股',strategy:'波段',brokerId:'pingan'},
+  {ticker:'515880',name:'通信ETF国泰',qty:20000.0,avgCost:1.5000,currentPrice:1.5000,currency:'CNY',assetClass:'A股',strategy:'波段',brokerId:'pingan'},
   {ticker:'CASH_CNY_PA',name:'平安现金及回购',isCash:true,cashAmount:613031.33,qty:1,avgCost:613031.33,currentPrice:613031.33,currency:'CNY',assetClass:'现金',strategy:'现金',brokerId:'pingan'}
 ].map(h=>({...h,id:uid(),sector:h.assetClass,priceUpdatedAt:null,isCash:h.isCash||false}));
 
@@ -962,7 +961,15 @@ const PINGAN_HISTORY_TRADES=[
   {id:'pa0637',brokerId:'pingan',ticker:'518850',name:'黄金ETF华夏',side:'buy',qty:2000.0,price:9.935,currency:'CNY',date:'2026-05-07',fee:5.0,realizedPnl:0},
   {id:'pa0638',brokerId:'pingan',ticker:'00981',name:'中芯国际',side:'sell',qty:500.0,price:75.0,currency:'CNY',date:'2026-05-08',fee:9.81,realizedPnl:2716.67},
   {id:'pa0639',brokerId:'pingan',ticker:'513050',name:'中概互联网ETF易方达',side:'buy',qty:40000.0,price:1.213,currency:'CNY',date:'2026-05-11',fee:5.0,realizedPnl:0},
-  {id:'pa0640',brokerId:'pingan',ticker:'159201',name:'自由现金流ETF华夏',side:'buy',qty:30000.0,price:1.301,currency:'CNY',date:'2026-05-14',fee:5.0,realizedPnl:0}
+  {id:'pa0640',brokerId:'pingan',ticker:'159201',name:'自由现金流ETF华夏',side:'buy',qty:30000.0,price:1.301,currency:'CNY',date:'2026-05-14',fee:5.0,realizedPnl:0},
+  {id:'pa0641',brokerId:'pingan',ticker:'160644',name:'港美互联网LOF',side:'buy',qty:18700.0,price:2.050,currency:'CNY',date:'2026-05-18',fee:5.0,realizedPnl:0},
+  {id:'pa0642',brokerId:'pingan',ticker:'159201',name:'自由现金流ETF华夏',side:'sell',qty:30000.0,price:1.274,currency:'CNY',date:'2026-05-18',fee:5.0,realizedPnl:-815.0},
+  {id:'pa0643',brokerId:'pingan',ticker:'515880',name:'通信ETF国泰',side:'buy',qty:20000.0,price:1.500,currency:'CNY',date:'2026-05-18',fee:5.0,realizedPnl:0},
+  {id:'pa0644',brokerId:'pingan',ticker:'159967',name:'创业板成长ETF华夏',side:'buy',qty:26000.0,price:0.865,currency:'CNY',date:'2026-05-18',fee:5.0,realizedPnl:0},
+  {id:'pa0645',brokerId:'pingan',ticker:'159501',name:'纳指ETF嘉实',side:'sell',qty:50000.0,price:1.917,currency:'CNY',date:'2026-05-18',fee:9.59,realizedPnl:7040.41},
+  {id:'pa0646',brokerId:'pingan',ticker:'159967',name:'创业板成长ETF华夏',side:'sell',qty:52000.0,price:0.842,currency:'CNY',date:'2026-05-19',fee:5.0,realizedPnl:1425.0},
+  {id:'pa0647',brokerId:'pingan',ticker:'518850',name:'黄金ETF华夏',side:'buy',qty:2000.0,price:9.430,currency:'CNY',date:'2026-05-20',fee:5.0,realizedPnl:0},
+  {id:'pa0648',brokerId:'pingan',ticker:'160644',name:'港美互联网LOF',side:'buy',qty:18700.0,price:1.983,currency:'CNY',date:'2026-05-20',fee:5.0,realizedPnl:0}
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -993,13 +1000,8 @@ const HSBC_HISTORY_TRADES=[
 ];
 
 const HSBC_DEPOSITS=[
-  {date:'2023-03-27',desc:'入金',amount:100000,currency:'CNY',broker:'hsbc'},
-  {date:'2023-03-27',desc:'入金',amount:100000,currency:'CNY',broker:'hsbc'},
-  {date:'2023-07-19',desc:'入金',amount:100000,currency:'CNY',broker:'hsbc'},
-  {date:'2023-07-19',desc:'入金',amount:12000,currency:'CNY',broker:'hsbc'},
-  {date:'2023-07-21',desc:'入金',amount:100000,currency:'CNY',broker:'hsbc'},
-  {date:'2024-09-19',desc:'入金',amount:8559.64,currency:'USD',broker:'hsbc'},
-  {date:'2026-01-19',desc:'入金',amount:110936.36,currency:'CNY',broker:'hsbc'}
+  // 实际净入金：2024-2025年合计投入 ¥254,004.52 CNY（含赎回再投资后的净额）
+  {date:'2024-01-01',desc:'入金',amount:254004.52,currency:'CNY',broker:'hsbc'}
 ];
 
 
@@ -1092,12 +1094,19 @@ const OKX_DEPOSITS=[
 // 汇丰香港（单位信托基金 + 港币储蓄）
 // ═══════════════════════════════════════════════════════════════
 const SEED_HSBC_HK=[
-  {ticker:'HSBCHK_FUND',name:'汇丰香港-单位信托基金',qty:1,avgCost:173957.11,currentPrice:170114.95,currency:'HKD',assetClass:'基金',strategy:'配置',brokerId:'hsbc_hk'},
+  {ticker:'HSBCHK_FUND',name:'汇丰香港-单位信托基金',qty:1,avgCost:173957.11,currentPrice:170114.95,currency:'HKD',assetClass:'债券',strategy:'防守',brokerId:'hsbc_hk'},
   {ticker:'CASH_HKD_HK',name:'港币储蓄',isCash:true,cashAmount:5828.83,qty:1,avgCost:5828.83,currentPrice:5828.83,currency:'HKD',assetClass:'现金',strategy:'现金',brokerId:'hsbc_hk'}
 ].map(h=>({...h,id:uid(),sector:h.assetClass,priceUpdatedAt:null,isCash:h.isCash||false}));
 
 const HSBC_HK_DEPOSITS=[
   {date:'2024-09-29',desc:'入金',amount:165456.68,currency:'HKD',broker:'hsbc_hk'}
+];
+
+const HSBC_HK_HISTORY_TRADES=[
+  // 2024-09-29: 申购单位信托基金，投资金额含申购费
+  {id:'hk001',brokerId:'hsbc_hk',ticker:'HSBCHK_FUND',name:'汇丰香港-单位信托基金',side:'buy',qty:1,price:173957.11,currency:'HKD',date:'2024-09-29',fee:0,realizedPnl:0},
+  // 历次股息派发（现金入账，非再投资）
+  {id:'hk002',brokerId:'hsbc_hk',ticker:'HSBCHK_FUND',name:'汇丰香港-单位信托基金',side:'dividend',qty:0,price:0,currency:'HKD',date:'2025-04-30',fee:0,realizedPnl:5764.83}
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -1151,7 +1160,7 @@ const QIEMAN_DEPOSITS=[
 ];
 
 
-const SEED=[...SEED_TIGER,...SEED_PINGAN,...SEED_HSBC,...SEED_HSBC_HK,...SEED_CMB,...SEED_XUEQIU,...SEED_OKX,...SEED_COINCOLA];
+const SEED=[...SEED_TIGER,...SEED_PINGAN,...SEED_HSBC,...SEED_HSBC_HK,...SEED_CMB,...SEED_XUEQIU,...SEED_QIEMAN,...SEED_OKX,...SEED_COINCOLA];
 
 // Trades AFTER 5/14 baseline (applied on top of SEED positions)
 const SEED_TRADES=[
@@ -1374,18 +1383,18 @@ const CLOSED_POSITIONS=[
 // STORAGE
 // ═══════════════════════════════════════════════════════════════
 const DB={
-  lh(){try{return JSON.parse(localStorage.getItem('ptf18_h')||'null')}catch{return null}},
-  sh(d){localStorage.setItem('ptf18_h',JSON.stringify(d))},
-  lr(){try{return JSON.parse(localStorage.getItem('ptf18_r')||'null')}catch{return null}},
-  sr(r){localStorage.setItem('ptf18_r',JSON.stringify(r))},
-  lpu(){try{return JSON.parse(localStorage.getItem('ptf18_pu')||'null')}catch{return null}},
-  spu(t){localStorage.setItem('ptf18_pu',JSON.stringify(t))},
+  lh(){try{return JSON.parse(localStorage.getItem('ptf19_h')||'null')}catch{return null}},
+  sh(d){localStorage.setItem('ptf19_h',JSON.stringify(d))},
+  lr(){try{return JSON.parse(localStorage.getItem('ptf19_r')||'null')}catch{return null}},
+  sr(r){localStorage.setItem('ptf19_r',JSON.stringify(r))},
+  lpu(){try{return JSON.parse(localStorage.getItem('ptf19_pu')||'null')}catch{return null}},
+  spu(t){localStorage.setItem('ptf19_pu',JSON.stringify(t))},
   // Snapshots: array of {date,totalValue,totalCost,totalPnl,byBroker:{id:value,...}}
-  lsnap(){try{return JSON.parse(localStorage.getItem('ptf18_snap')||'[]')}catch{return[]}},
-  ssnap(s){localStorage.setItem('ptf18_snap',JSON.stringify(s))},
+  lsnap(){try{return JSON.parse(localStorage.getItem('ptf19_snap')||'[]')}catch{return[]}},
+  ssnap(s){localStorage.setItem('ptf19_snap',JSON.stringify(s))},
   // Trades: array of {id,brokerId,ticker,name,side,qty,price,currency,date,note}
-  ltrades(){try{return JSON.parse(localStorage.getItem('ptf18_trades')||'null')}catch{return null}},
-  strades(t){localStorage.setItem('ptf18_trades',JSON.stringify(t))},
+  ltrades(){try{return JSON.parse(localStorage.getItem('ptf19_trades')||'null')}catch{return null}},
+  strades(t){localStorage.setItem('ptf19_trades',JSON.stringify(t))},
 };
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function seed(){return SEED.map(h=>({...h,id:uid(),sector:h.assetClass,priceUpdatedAt:null}))}
@@ -1528,7 +1537,7 @@ function deleteTrade(id){
 // Merge HISTORY_TRADES + S.trades for a ticker, compute WAC realized PnL
 function calcTickerStats(ticker, brokerId){
   const seen=new Set();
-  const allT=[...HISTORY_TRADES,...(typeof PINGAN_HISTORY_TRADES!=='undefined'?PINGAN_HISTORY_TRADES:[]),...(typeof HSBC_HISTORY_TRADES!=='undefined'?HSBC_HISTORY_TRADES:[]),...(typeof OKX_HISTORY_TRADES!=='undefined'?OKX_HISTORY_TRADES:[]),...(typeof CMB_HISTORY_TRADES!=='undefined'?CMB_HISTORY_TRADES:[]),...S.trades]
+  const allT=[...HISTORY_TRADES,...(typeof PINGAN_HISTORY_TRADES!=='undefined'?PINGAN_HISTORY_TRADES:[]),...(typeof HSBC_HISTORY_TRADES!=='undefined'?HSBC_HISTORY_TRADES:[]),...(typeof HSBC_HK_HISTORY_TRADES!=='undefined'?HSBC_HK_HISTORY_TRADES:[]),...(typeof OKX_HISTORY_TRADES!=='undefined'?OKX_HISTORY_TRADES:[]),...(typeof CMB_HISTORY_TRADES!=='undefined'?CMB_HISTORY_TRADES:[]),...S.trades]
     .filter(t=>{ if(seen.has(t.id))return false; seen.add(t.id); return true; })
     .filter(t=>t.ticker===ticker&&(!brokerId||t.brokerId===brokerId))
     .sort((a,b)=>a.date.localeCompare(b.date));
@@ -2170,6 +2179,7 @@ function brokerStats(){
   var allT=[].concat(HISTORY_TRADES,
     typeof PINGAN_HISTORY_TRADES!=='undefined'?PINGAN_HISTORY_TRADES:[],
     typeof HSBC_HISTORY_TRADES!=='undefined'?HSBC_HISTORY_TRADES:[],
+    typeof HSBC_HK_HISTORY_TRADES!=='undefined'?HSBC_HK_HISTORY_TRADES:[],
     typeof OKX_HISTORY_TRADES!=='undefined'?OKX_HISTORY_TRADES:[],
     typeof CMB_HISTORY_TRADES!=='undefined'?CMB_HISTORY_TRADES:[],
     S.trades);
@@ -2200,7 +2210,7 @@ function brokerStats(){
       return s+(d.desc==='出金'?-c:c);
     },0);
     var bT=allT.filter(function(t){return t.brokerId===b.id;});
-    var realized=bT.filter(function(t){return t.side==='sell';})
+    var realized=bT.filter(function(t){return t.side==='sell'||t.side==='dividend';})
       .reduce(function(s,t){return s+toC(t.realizedPnl||0,t.currency,t.date.slice(0,7));},0);
     var bHs=S.holdings.filter(function(h){return h.brokerId===b.id;});
     var unrealized=bHs.reduce(function(s,h){return s+hm(h).pnlCNY;},0);
