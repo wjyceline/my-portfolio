@@ -1657,11 +1657,11 @@ function uniq(key){return[...new Set(S.holdings.map(h=>h[key]).filter(Boolean))]
 
 // Map holding → Yahoo Finance symbol
 function toYahooSym(h){
-  if(h.isCash||h.assetClass==='现金')return null;
+  if(h.isCash||h.assetClass==='现金') return null;
   const t=h.ticker.trim();
   const tUp=t.toUpperCase();
 
-  // 加密货币 → Yahoo crypto pairs
+  // 1. 加密货币
   const CRYPTO_YAHOO={
     BTC:'BTC-USD',ETH:'ETH-USD',SOL:'SOL-USD',BNB:'BNB-USD',
     XRP:'XRP-USD',DOGE:'DOGE-USD',ADA:'ADA-USD',AVAX:'AVAX-USD',
@@ -1670,35 +1670,21 @@ function toYahooSym(h){
   if(CRYPTO_YAHOO[tUp]) return CRYPTO_YAHOO[tUp];
   if(h.assetClass==='加密') return tUp+'-USD';
 
-  // 港股：4-5位纯数字（含港股通，如00700、01810）
-  if(/^\d{4,5}$/.test(t)){
-    return parseInt(t,10)+'.HK';
-  }
+  // 2. 纯字母 → 美股（AAPL, GOOG, SMH, TQQQ...）
+  if(/^[A-Za-z]+$/.test(t)) return tUp;
 
-  // A股/ETF：6位纯数字，按首位判断交易所
+  // 3. 港股：4-5位纯数字（00700, 01810, 07747...）
+  if(/^\d{4,5}$/.test(t)) return parseInt(t,10)+'.HK';
+
+  // 4. A股/ETF：6位纯数字，按交易所前缀判断
   if(/^\d{6}$/.test(t)){
     const pre=t.slice(0,2);
-    // 上交所：60/68（A股）+ 51/50/58（ETF/LOF）
-    if(['60','68','51','50','58','11'].includes(pre)) return t+'.SS';
-    // 深交所：00/30（A股）+ 15/16（ETF/LOF）
-    if(['00','30','15','16','02','03'].includes(pre)) return t+'.SZ';
-    return null; // 其他6位（如基金代码019518）无Yahoo数据
+    if(['60','68','51','50','58','11'].includes(pre)) return t+'.SS'; // 上交所
+    if(['00','30','15','16','02','03'].includes(pre)) return t+'.SZ'; // 深交所
+    return null; // 基金代码如019518等，无Yahoo数据
   }
 
-  // 公募基金代码（含字母或非标格式）→ 无公开实时API，跳过
-  if(/^[0-9]{6}[A-Z]?$/.test(tUp)===false&&/^\d+$/.test(t)===false){
-    return null;
-  }
-
-  // HKD计价的其他标的
-  if(h.currency==='HKD') return parseInt(t,10)+'.HK';
-
-  // USD股票（纯字母代码如AAPL/GOOG）
-  if(/^[A-Z]+$/.test(tUp)) return tUp;
-
-  // 美港股资产类别的其他情况
-  if(h.assetClass==='美港股'&&h.currency==='USD') return tUp;
-
+  // 5. 其余（HSBC基金代码IPFD开头、GOLD_CMB等特殊标识）→ 跳过
   return null;
 }
 
